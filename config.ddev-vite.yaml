@@ -1,0 +1,13 @@
+#ddev-generated
+# Remove this line if you want to edit this file
+
+web_extra_exposed_ports:
+    - name: vite
+      container_port: 5179
+      http_port: 5179
+      https_port: 5179
+
+web_extra_daemons:
+    - name: vite
+      command: npm run dev
+      directory: /var/www/html

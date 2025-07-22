@@ -1,0 +1,75 @@
+/* Font uses */
+@use 'pkg:@fontsource-utils/scss' as Fontsource;
+@use 'pkg:@fontsource-variable/source-sans-3/scss/metadata' as SourceSans;
+@use 'pkg:@fontsource-variable/quicksand/scss/metadata' as Quicksand;
+@use 'pkg:@fontsource-variable/montserrat/scss/metadata' as Montserrat;
+@use 'pkg:@fontsource-variable/fira-code/scss/metadata' as FiraCode;
+
+// Instead of 'import'-ing each font, 'use' the mixin to only keep the required
+// subsets and types of each font family (e.g. 'latin' without 'vietnamese').
+// This will significantly reduce the size of the exported font-families and as
+// a result will speed-up the loading of your website. In essence this SCSS file
+// which should be used as a guide, replaces the following single line of code:
+// @import '@fontsource-variable/open-sans';
+
+// Use the SCSS of each font which is required by the theme:
+@import '@fontsource-variable/source-sans-3/index';
+@import '@fontsource-variable/quicksand/index';
+@import '@fontsource-variable/montserrat/index';
+@import '@fontsource-variable/fira-code/index';
+
+// Open Sans (Variable, supports weights 300-800). By default, Latin,
+// Latin-extended, Greek, Greek-extended, Hebrew, Vietnamese, Symbols, Cyrillic
+// & Math character sets are included. No italics. This include replaces:
+//  @link https://fontsource.org/fonts/open-sans/install
+@include Fontsource.faces(
+	$metadata: SourceSans.$metadata,
+	$family: 'Source Sans 3 Variable',
+	$directory: '@fontsource-variable/source-sans-3/files',
+	$subsets: (
+		latin,
+		latin-ext,
+	)
+);
+
+// Quicksand (Variable, supports weights 300-700). By default, Latin,
+// Latin-extended, Greek, Greek-extended, Hebrew, Vietnamese, Symbols, Cyrillic
+// & Math character sets are included. No italics. This include replaces:
+//  @link https://fontsource.org/fonts/quicksand/install
+@include Fontsource.faces(
+	$metadata: Quicksand.$metadata,
+	$family: 'Quicksand Variable',
+	$directory: '@fontsource-variable/quicksand/files',
+	$subsets: (
+		latin,
+		latin-ext,
+	)
+);
+
+// Montserrat (Variable, supports weights 100-900). By default, Latin,
+// Latin-extended, Greek, Greek-extended, Hebrew, Vietnamese, Symbols, Cyrillic
+// & Math character sets are included. No italics. This include replaces:
+//  @link https://fontsource.org/fonts/montserrat/install
+@include Fontsource.faces(
+	$metadata: Montserrat.$metadata,
+	$family: 'Montserrat Variable',
+	$directory: '@fontsource-variable/montserrat/files',
+	$subsets: (
+		latin,
+		latin-ext,
+	)
+);
+
+// Fira Code (Variable, supports weights 300-700). By default, Latin,
+// Latin-extended, Greek, Greek-extended, Hebrew, Vietnamese, Symbols, Cyrillic
+// & Math character sets are included. No italics. This include replaces:
+//  @link https://fontsource.org/fonts/fira-code/install
+@include Fontsource.faces(
+	$metadata: FiraCode.$metadata,
+	$family: 'Fira Code Variable',
+	$directory: '@fontsource-variable/fira-code/files',
+	$subsets: (
+		latin,
+		latin-ext,
+	)
+);

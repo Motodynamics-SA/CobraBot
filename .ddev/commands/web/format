@@ -1,0 +1,8 @@
+#!/bin/bash
+
+## Description: Format all code (PHP + JS/TS)
+## Usage: format
+## Example: "ddev format"
+
+vendor/bin/pint
+npm run format

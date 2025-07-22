@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+public/
+vendor/
+storage/
+bootstrap/
+.git/
+*.d.ts
+*.html
+*.md
+resources/js/components/ui/*
+resources/js/ziggy.js
+resources/views/mail/*

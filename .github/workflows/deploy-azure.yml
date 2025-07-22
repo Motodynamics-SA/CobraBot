@@ -1,0 +1,78 @@
+name: Deploy Laravel App to Azure
+
+on:
+    push:
+        branches:
+            - release
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        env:
+            AZURE_RESOURCE_GROUP: '${{ vars.AZURE_RESOURCE_GROUP }}' # Create a GitHub variable for your resource group
+            AZURE_APP_NAME: 'price-updater-app'
+            AZURE_LOCATION: 'northeurope'
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: 'Az CLI login'
+              uses: azure/login@v1
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Deploy Bicep file
+              uses: azure/arm-deploy@v1
+              with:
+                  scope: resourcegroup
+                  subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+                  template: ./azure/main.bicep
+                  parameters: 'appName=${{ env.AZURE_APP_NAME }} mysqlUsername=${{ secrets.MYSQL_USERNAME }} mysqlPassword=${{ secrets.MYSQL_PASSWORD }}'
+
+            - name: Set up PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.2'
+
+            - name: Install Composer dependencies
+              run: composer install --no-dev --optimize-autoloader
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+
+            - name: Install NPM dependencies
+              run: npm install
+
+            - name: Build frontend assets
+              run: npm run build
+
+            - name: Generate app key
+              run: php artisan key:generate --force
+
+            - name: Create deployment package
+              run: |
+                  mkdir -p deployment
+                  rsync -av --exclude='/deployment' --exclude='/azure' --exclude='.git' --exclude='.github' --exclude='node_modules' .
+                  deployment/
+                  cd deployment
+                  zip -r ../deployment.zip .
+
+            - name: Deploy to Azure App Service
+              uses: azure/webapps-deploy@v2
+              with:
+                  app-name: ${{ env.AZURE_APP_NAME }}
+                  package: deployment.zip
+
+            - name: Run remote migrations
+              uses: azure/CLI@v1
+              with:
+                  inlineScript: |
+                      az webapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_APP_NAME }} --settings SCM_COMMAND_IDLE_TIMEOUT=300
+                      az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_APP_NAME }} --src deployment.zip
+                      az webapp ssh --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_APP_NAME }} --command "php artisan migrate --force"

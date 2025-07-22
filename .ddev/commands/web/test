@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run Pest tests
+## Usage: test [args...]
+## Example: "ddev test" or "ddev test tests/Feature/UserTest.php"
+
+vendor/bin/pest "$@"

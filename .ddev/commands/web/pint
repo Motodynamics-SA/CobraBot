@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run Laravel Pint
+## Usage: pint [args...]
+## Example: "ddev pint" or "ddev pint --test"
+
+vendor/bin/pint "$@"

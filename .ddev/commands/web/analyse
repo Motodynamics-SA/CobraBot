@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run PHPStan
+## Usage: analyse [args...]
+## Example: "ddev analyse"
+
+vendor/bin/phpstan analyse "$@"

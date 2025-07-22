@@ -1,0 +1,525 @@
+{
+	"date": "15/07/2025",
+	"location": "664",
+	"data": [
+		{
+			"name": "MDMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "23/08/2025",
+					"yield": "56",
+					"yield_s": "P44"
+				}
+			]
+		},
+		{
+			"name": "EDMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "29/08/2025",
+					"yield": "55",
+					"yield_s": "P45"
+				}
+			]
+		},
+		{
+			"name": "CDMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "53",
+			"yield_s": "P47",
+			"peaks": []
+		},
+		{
+			"name": "CXMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "18/08/2025",
+					"end": "25/08/2025",
+					"yield": "55",
+					"yield_s": "P45"
+				}
+			]
+		},
+		{
+			"name": "CFMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "27/08/2025",
+					"yield": "55",
+					"yield_s": "P45"
+				}
+			]
+		},
+		{
+			"name": "CWMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "57",
+			"yield_s": "P43",
+			"peaks": [
+				{
+					"start": "19/08/2025",
+					"end": "23/08/2025",
+					"yield": "59",
+					"yield_s": "P41"
+				}
+			]
+		},
+		{
+			"name": "IFMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "23/08/2025",
+					"end": "24/08/2025",
+					"yield": "55",
+					"yield_s": "P45"
+				}
+			]
+		},
+		{
+			"name": "SFMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "53",
+			"yield_s": "P47",
+			"peaks": [
+				{
+					"start": "22/08/2025",
+					"end": "28/08/2025",
+					"yield": "56",
+					"yield_s": "P44"
+				}
+			]
+		},
+		{
+			"name": "FFMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": [
+				{
+					"start": "22/08/2025",
+					"end": "29/08/2025",
+					"yield": "57",
+					"yield_s": "P43"
+				}
+			]
+		},
+		{
+			"name": "EDAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "23/08/2025",
+					"yield": "54",
+					"yield_s": "P46"
+				}
+			]
+		},
+		{
+			"name": "EXAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": []
+		},
+		{
+			"name": "CDAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "23/08/2025",
+					"yield": "54",
+					"yield_s": "P46"
+				}
+			]
+		},
+		{
+			"name": "CFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "23/08/2025",
+					"yield": "53",
+					"yield_s": "P47"
+				}
+			]
+		},
+		{
+			"name": "CXAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": []
+		},
+		{
+			"name": "IFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": []
+		},
+		{
+			"name": "SXAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "SFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": []
+		},
+		{
+			"name": "FFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": [
+				{
+					"start": "22/08/2025",
+					"end": "28/08/2025",
+					"yield": "53",
+					"yield_s": "P47"
+				}
+			]
+		},
+		{
+			"name": "SQAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "58",
+			"yield_s": "P42",
+			"peaks": [
+				{
+					"start": "18/08/2025",
+					"end": "22/08/2025",
+					"yield": "60",
+					"yield_s": "P40"
+				}
+			]
+		},
+		{
+			"name": "PSAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": [
+				{
+					"start": "23/08/2025",
+					"end": "25/08/2025",
+					"yield": "54",
+					"yield_s": "P46"
+				}
+			]
+		},
+		{
+			"name": "PDAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": []
+		},
+		{
+			"name": "PFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "52",
+			"yield_s": "P48",
+			"peaks": []
+		},
+		{
+			"name": "PFAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "50",
+			"yield_s": "P50",
+			"peaks": []
+		},
+		{
+			"name": "PQAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "PJAH",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "58",
+			"yield_s": "P42",
+			"peaks": []
+		},
+		{
+			"name": "PTAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "59",
+			"yield_s": "P41",
+			"peaks": [
+				{
+					"start": "22/08/2025",
+					"end": "23/08/2025",
+					"yield": "61",
+					"yield_s": "P39"
+				}
+			]
+		},
+		{
+			"name": "XFAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "53",
+			"yield_s": "P47",
+			"peaks": [
+				{
+					"start": "18/08/2025",
+					"end": "23/08/2025",
+					"yield": "55",
+					"yield_s": "P45"
+				}
+			]
+		},
+		{
+			"name": "XFAX",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": [
+				{
+					"start": "29/08/2025",
+					"end": "31/08/2025",
+					"yield": "52",
+					"yield_s": "P48"
+				}
+			]
+		},
+		{
+			"name": "XTAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": [
+				{
+					"start": "18/08/2025",
+					"end": "26/08/2025",
+					"yield": "52",
+					"yield_s": "P48"
+				}
+			]
+		},
+		{
+			"name": "XJAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "XSAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "XSAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "53",
+			"yield_s": "P47",
+			"peaks": []
+		},
+		{
+			"name": "XJAX",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "XDAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "MDAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "55",
+			"yield_s": "P45",
+			"peaks": []
+		},
+		{
+			"name": "MTAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "EDAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "54",
+			"yield_s": "P46",
+			"peaks": []
+		},
+		{
+			"name": "CDAE",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "51",
+			"yield_s": "P49",
+			"peaks": []
+		},
+		{
+			"name": "SVMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "69",
+			"yield_s": "P31",
+			"peaks": [
+				{
+					"start": "30/08/2025",
+					"end": "30/08/2025",
+					"yield": "71",
+					"yield_s": "P29"
+				},
+				{
+					"start": "21/08/2025",
+					"end": "25/08/2025",
+					"yield": "71",
+					"yield_s": "P29"
+				}
+			]
+		},
+		{
+			"name": "SVAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "70",
+			"yield_s": "P30",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "24/08/2025",
+					"yield": "71",
+					"yield_s": "P29"
+				}
+			]
+		},
+		{
+			"name": "FVMR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "66",
+			"yield_s": "P34",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "24/08/2025",
+					"yield": "67",
+					"yield_s": "P33"
+				}
+			]
+		},
+		{
+			"name": "FVAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "60",
+			"yield_s": "P40",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "24/08/2025",
+					"yield": "64",
+					"yield_s": "P36"
+				}
+			]
+		},
+		{
+			"name": "PVAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "59",
+			"yield_s": "P41",
+			"peaks": [
+				{
+					"start": "20/08/2025",
+					"end": "24/08/2025",
+					"yield": "63",
+					"yield_s": "P37"
+				}
+			]
+		},
+		{
+			"name": "XVAR",
+			"start": "18/08/2025",
+			"end": "31/08/2025",
+			"yield": "68",
+			"yield_s": "P32",
+			"peaks": []
+		}
+	]
+}
