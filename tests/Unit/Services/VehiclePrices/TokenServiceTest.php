@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\VehiclePrices;
 
+use App\Exceptions\VehiclePrices\APIRequestException;
+use App\Exceptions\VehiclePrices\AuthenticationException;
 use App\Services\VehiclePrices\TokenService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -123,19 +125,90 @@ class TokenServiceTest extends TestCase {
         $this->assertEquals('new_token_789', Cache::get('vehicle_prices_access_token'));
     }
 
-    public function test_make_authenticated_request_returns_null_on_final_failure() {
+    public function test_make_authenticated_request_throws_exception_immediately_for_non_401_errors() {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
-        // Mock API to always return 500
+        // Mock API to return 500 (should not retry)
         Http::fake([
             'api.example.com/*' => Http::response(['error' => 'Server Error'], 500),
         ]);
 
-        // Make request
-        $response = $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        // Make request and expect exception immediately
+        $this->expectException(APIRequestException::class);
+        $this->expectExceptionMessage('API request failed');
 
-        // Assert response is null
-        $this->assertNull($response);
+        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+    }
+
+    public function test_make_authenticated_request_throws_exception_after_token_refresh_retry() {
+        // Set a cached token
+        Cache::put('vehicle_prices_access_token', 'test_token', 3500);
+
+        // Mock responses: first 401, then successful token fetch, then 401 again
+        Http::fake([
+            'identity-stage.goorange.sixt.com/*' => Http::response([
+                'access_token' => 'new_token_789',
+                'expires_in' => 3600,
+            ], 200),
+            'api.example.com/*' => Http::response(['error' => 'Unauthorized'], 401),
+        ]);
+
+        // Make request and expect exception after retry
+        $this->expectException(APIRequestException::class);
+        $this->expectExceptionMessage('API request failed');
+
+        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+    }
+
+    public function test_get_access_token_throws_exception_when_token_fetch_fails() {
+        // Mock the HTTP response to return an error
+        Http::fake([
+            'identity-stage.goorange.sixt.com/*' => Http::response(['error' => 'Invalid credentials'], 401),
+        ]);
+
+        // Clear any existing cache
+        Cache::forget('vehicle_prices_access_token');
+
+        // Expect authentication exception
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('Failed to fetch access token from API');
+
+        $this->tokenService->getAccessToken();
+    }
+
+    public function test_get_access_token_throws_exception_when_no_token_in_response() {
+        // Mock the HTTP response to return success but no token
+        Http::fake([
+            'identity-stage.goorange.sixt.com/*' => Http::response(['expires_in' => 3600], 200),
+        ]);
+
+        // Clear any existing cache
+        Cache::forget('vehicle_prices_access_token');
+
+        // Expect authentication exception
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('No access token received from API');
+
+        $this->tokenService->getAccessToken();
+    }
+
+    public function test_make_authenticated_request_only_retries_on_401_errors() {
+        // Set a cached token
+        Cache::put('vehicle_prices_access_token', 'test_token', 3500);
+
+        // Mock API to return 403 (Forbidden) - should not retry
+        Http::fake([
+            'api.example.com/*' => Http::response(['error' => 'Forbidden'], 403),
+        ]);
+
+        // Make request and expect exception immediately (no retry)
+        $this->expectException(APIRequestException::class);
+        $this->expectExceptionMessage('API request failed');
+
+        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+
+        // Verify only one request was made (no retry)
+        Http::assertSentCount(1);
     }
 }

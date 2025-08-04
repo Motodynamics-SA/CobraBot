@@ -27,8 +27,15 @@ export interface SteeringRecord {
 // Helper function to format date for display
 const formatDate = (dateStr: string): string => {
 	if (!dateStr) return '-';
-	const date = new Date(dateStr);
-	return date.toLocaleDateString('en-GB', {
+
+	// Parse the date string more explicitly to avoid timezone issues
+	const [datePart] = dateStr.split(' ');
+	const [year, month, day] = datePart.split('-').map(Number);
+
+	// Create date using local time to avoid timezone conversion issues
+	const date = new Date(year, month - 1, day);
+
+	return date.toLocaleDateString('el-GR', {
 		day: '2-digit',
 		month: '2-digit',
 		year: 'numeric',
@@ -38,8 +45,16 @@ const formatDate = (dateStr: string): string => {
 // Helper function to format datetime for display
 const formatDateTime = (dateStr: string): string => {
 	if (!dateStr) return '-';
-	const date = new Date(dateStr);
-	return date.toLocaleDateString('en-GB', {
+
+	// Parse the date string more explicitly to avoid timezone issues
+	const [datePart, timePart] = dateStr.split(' ');
+	const [year, month, day] = datePart.split('-').map(Number);
+	const [hour, minute] = (timePart || '00:00').split(':').map(Number);
+
+	// Create date using local time to avoid timezone conversion issues
+	const date = new Date(year, month - 1, day, hour, minute);
+
+	return date.toLocaleDateString('el-GR', {
 		day: '2-digit',
 		month: '2-digit',
 		year: 'numeric',

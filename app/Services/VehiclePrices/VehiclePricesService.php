@@ -2,11 +2,13 @@
 
 namespace App\Services\VehiclePrices;
 
+use App\Exceptions\VehiclePrices\APIRequestException;
+use App\Exceptions\VehiclePrices\AuthenticationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class TokenService {
+class VehiclePricesService {
     private const CACHE_KEY = 'vehicle_prices_access_token';
 
     private string $clientId;
@@ -33,8 +35,10 @@ class TokenService {
 
     /**
      * Get a valid access token, fetching a new one if necessary
+     *
+     * @throws AuthenticationException
      */
-    public function getAccessToken(): ?string {
+    public function getAccessToken(): string {
         // Try to get token from cache first
         $cachedToken = Cache::get(self::CACHE_KEY);
         if ($cachedToken) {
@@ -47,8 +51,10 @@ class TokenService {
 
     /**
      * Fetch a new access token from the API
+     *
+     * @throws AuthenticationException
      */
-    private function fetchNewToken(): ?string {
+    private function fetchNewToken(): string {
         try {
             $response = Http::asForm()->post($this->tokenUrl, [
                 'grant_type' => 'client_credentials',
@@ -62,7 +68,15 @@ class TokenService {
                     'response' => $response->json(),
                 ]);
 
-                return null;
+                throw new AuthenticationException(
+                    'Failed to fetch access token from API',
+                    $response->status(),
+                    null,
+                    [
+                        'status' => $response->status(),
+                        'response' => $response->json(),
+                    ]
+                );
             }
 
             $accessToken = $response->json('access_token');
@@ -71,7 +85,12 @@ class TokenService {
                     'response' => $response->json(),
                 ]);
 
-                return null;
+                throw new AuthenticationException(
+                    'No access token received from API',
+                    0,
+                    null,
+                    ['response' => $response->json()]
+                );
             }
 
             // Cache the token
@@ -80,13 +99,20 @@ class TokenService {
             Log::info('Successfully fetched and cached new access token');
 
             return $accessToken;
+        } catch (AuthenticationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Exception while fetching access token', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return null;
+            throw new AuthenticationException(
+                'Unexpected error while fetching access token',
+                0,
+                $e,
+                ['original_message' => $e->getMessage()]
+            );
         }
     }
 
@@ -103,21 +129,30 @@ class TokenService {
      *
      * @param  array<string, mixed>  $data
      *
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
+     *
+     * @throws AuthenticationException
+     * @throws APIRequestException
      */
-    public function makeAuthenticatedRequest(string $url, array $data = [], string $method = 'POST'): ?array {
-        $maxRetries = 2;
+    public function makeAuthenticatedRequest(string $url, array $data = [], string $method = 'POST'): array {
+        $maxRetries = 1; // Only retry once for token expiration
 
         for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
-            $accessToken = $this->getAccessToken();
-
-            if (! $accessToken) {
-                Log::error('Failed to get access token for authenticated request');
-
-                return null;
-            }
-
             try {
+                $accessToken = $this->getAccessToken();
+
+                // Save token to file for debugging
+                $tokenData = [
+                    'timestamp' => now()->toISOString(),
+                    'token_length' => strlen($accessToken),
+                    'token' => $accessToken,
+                ];
+                file_put_contents(
+                    storage_path('logs/access_token_debug.log'),
+                    json_encode($tokenData, JSON_PRETTY_PRINT) . "\n",
+                    FILE_APPEND | LOCK_EX
+                );
+
                 $response = Http::withToken($accessToken)
                     ->timeout($this->timeout)
                     ->$method($url, $data);
@@ -126,7 +161,7 @@ class TokenService {
                     return $response->json();
                 }
 
-                // If we get a 401, the token might be expired
+                // If we get a 401, the token might be expired - retry once
                 if ($response->status() === 401 && $attempt < $maxRetries) {
                     Log::info('Received 401, clearing cached token and retrying');
                     $this->clearCachedToken();
@@ -134,7 +169,7 @@ class TokenService {
                     continue;
                 }
 
-                // For other errors, log and return null
+                // For all other errors, throw exception immediately
                 Log::error('API request failed', [
                     'url' => $url,
                     'method' => $method,
@@ -143,26 +178,54 @@ class TokenService {
                     'attempt' => $attempt + 1,
                 ]);
 
-                return null;
+                throw new APIRequestException(
+                    'API request failed',
+                    0,
+                    null,
+                    [
+                        'url' => $url,
+                        'method' => $method,
+                        'status' => $response->status(),
+                        'response' => $response->json(),
+                        'attempt' => $attempt + 1,
+                    ],
+                    $response->status()
+                );
+
+            } catch (AuthenticationException $e) {
+                // Authentication errors should be thrown immediately
+                throw $e;
+            } catch (APIRequestException $e) {
+                // Re-throw API request exceptions
+                throw $e;
             } catch (\Exception $e) {
-                Log::error('Exception during authenticated request', [
+                Log::error('Unexpected exception during authenticated request', [
                     'url' => $url,
                     'method' => $method,
                     'message' => $e->getMessage(),
                     'attempt' => $attempt + 1,
                 ]);
 
-                if ($attempt < $maxRetries) {
-                    // Try clearing cache and retrying
-                    $this->clearCachedToken();
-
-                    continue;
-                }
-
-                return null;
+                throw new APIRequestException(
+                    'Unexpected error during API request',
+                    0,
+                    $e,
+                    [
+                        'url' => $url,
+                        'method' => $method,
+                        'original_message' => $e->getMessage(),
+                        'attempt' => $attempt + 1,
+                    ]
+                );
             }
         }
 
-        return null;
+        // This should never be reached, but just in case
+        throw new APIRequestException(
+            'Failed to make authenticated request after token refresh retry',
+            0,
+            null,
+            ['url' => $url, 'method' => $method]
+        );
     }
 }

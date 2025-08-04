@@ -179,7 +179,9 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 
 		try {
 			const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
-			const publishRecords = convertToPublishFormat(parsedData);
+			const publishRecords = {
+				steerings: convertToPublishFormat(parsedData),
+			};
 
 			const response = await fetch('/price-updater/publish-prices', {
 				method: 'POST',
@@ -278,8 +280,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 			records.push({
 				id: '',
 				steer_type: 'STEER_TYPE_UDA',
-				steer_from: item.start,
-				steer_to: item.end,
+				steer_from: parseDate(item.start) + ' 00:00',
+				steer_to: parseDate(item.end) + ' 23:59',
 				length_of_rent_from: 1,
 				length_of_rent_to: 1,
 				vehicle_group: item.name,
@@ -291,8 +293,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 				records.push({
 					id: '',
 					steer_type: 'STEER_TYPE_PEAK',
-					steer_from: peak.start,
-					steer_to: peak.end,
+					steer_from: parseDate(peak.start) + ' 00:00',
+					steer_to: parseDate(peak.end) + ' 23:59',
 					length_of_rent_from: 1,
 					length_of_rent_to: 1,
 					vehicle_group: item.name,
@@ -365,17 +367,13 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 							<p>
 								{String(publishResult.message || 'Prices published successfully')}
 							</p>
-							{publishResult.response && (
+							{publishResult.response !== undefined && (
 								<details className="mt-2">
 									<summary className="cursor-pointer text-sm">
 										View Response Details
 									</summary>
 									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-green-100 p-2 text-xs">
-										{JSON.stringify(
-											publishResult.response as Record<string, unknown>,
-											null,
-											2
-										)}
+										{JSON.stringify(publishResult.response, null, 2)}
 									</pre>
 								</details>
 							)}
