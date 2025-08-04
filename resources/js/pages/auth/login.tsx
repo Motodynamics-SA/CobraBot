@@ -216,12 +216,6 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 								{t('auth.login.button')}
 							</Button>
 						</div>
-						<div className="text-muted-foreground text-center text-sm">
-							Don't have an account?{' '}
-							<TextLink href={route('register')} tabIndex={5}>
-								Sign up
-							</TextLink>
-						</div>
 					</form>
 				</section>
 			</div>

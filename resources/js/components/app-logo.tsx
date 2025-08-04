@@ -8,7 +8,7 @@ export default function AppLogo({ label }: { label?: string }) {
 	return (
 		<div className="ml-1 flex items-center gap-2">
 			<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-md">
-				<AppLogoIcon className="size-5 h-8 fill-current text-black dark:text-black" />
+				<AppLogoIcon className="size-5 h-auto fill-current text-black dark:text-black" />
 			</div>
 			<span className="truncate text-sm font-semibold">{label ?? appName}</span>
 		</div>

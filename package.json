@@ -8,7 +8,7 @@
 		"dev": "vite",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"format:staged": "prettier --write",
+		"format:staged": "prettier --write && npm run lint:styles:fix",
 		"format:php": "vendor/bin/pint",
 		"lint": "eslint 'resources/**/*.{js,jsx,ts,tsx}'",
 		"lint:fix": "eslint 'resources/**/*.{js,jsx,ts,tsx}' --fix",
