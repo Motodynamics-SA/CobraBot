@@ -4,7 +4,7 @@ namespace Tests\Unit\Services\VehiclePrices;
 
 use App\Exceptions\VehiclePrices\APIRequestException;
 use App\Exceptions\VehiclePrices\AuthenticationException;
-use App\Services\VehiclePrices\TokenService;
+use App\Services\VehiclePrices\VehiclePricesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,7 +13,7 @@ use Tests\TestCase;
 class TokenServiceTest extends TestCase {
     use RefreshDatabase;
 
-    private TokenService $tokenService;
+    private VehiclePricesService $vehiclePricesService;
 
     protected function setUp(): void {
         parent::setUp();
@@ -30,7 +30,7 @@ class TokenServiceTest extends TestCase {
             ],
         ]);
 
-        $this->tokenService = new TokenService;
+        $this->vehiclePricesService = new VehiclePricesService;
     }
 
     public function test_get_access_token_fetches_new_token_when_cache_empty() {
@@ -46,7 +46,7 @@ class TokenServiceTest extends TestCase {
         Cache::forget('vehicle_prices_access_token');
 
         // Get token
-        $token = $this->tokenService->getAccessToken();
+        $token = $this->vehiclePricesService->getAccessToken();
 
         // Assert token was fetched and cached
         $this->assertEquals('test_token_123', $token);
@@ -58,7 +58,7 @@ class TokenServiceTest extends TestCase {
         Cache::put('vehicle_prices_access_token', 'cached_token_456', 3500);
 
         // Get token
-        $token = $this->tokenService->getAccessToken();
+        $token = $this->vehiclePricesService->getAccessToken();
 
         // Assert cached token was returned
         $this->assertEquals('cached_token_456', $token);
@@ -72,7 +72,7 @@ class TokenServiceTest extends TestCase {
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
         // Clear the token
-        $this->tokenService->clearCachedToken();
+        $this->vehiclePricesService->clearCachedToken();
 
         // Assert token was removed
         $this->assertNull(Cache::get('vehicle_prices_access_token'));
@@ -88,7 +88,7 @@ class TokenServiceTest extends TestCase {
         ]);
 
         // Make request
-        $response = $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        $response = $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
 
         // Assert response was successful
         $this->assertEquals(['prices' => [100, 200, 300]], $response);
@@ -116,7 +116,7 @@ class TokenServiceTest extends TestCase {
         ]);
 
         // Make request
-        $response = $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        $response = $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
 
         // Assert response was successful after retry
         $this->assertEquals(['prices' => [100, 200, 300]], $response);
@@ -138,7 +138,7 @@ class TokenServiceTest extends TestCase {
         $this->expectException(APIRequestException::class);
         $this->expectExceptionMessage('API request failed');
 
-        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
     }
 
     public function test_make_authenticated_request_throws_exception_after_token_refresh_retry() {
@@ -158,7 +158,7 @@ class TokenServiceTest extends TestCase {
         $this->expectException(APIRequestException::class);
         $this->expectExceptionMessage('API request failed');
 
-        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
     }
 
     public function test_get_access_token_throws_exception_when_token_fetch_fails() {
@@ -174,7 +174,7 @@ class TokenServiceTest extends TestCase {
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Failed to fetch access token from API');
 
-        $this->tokenService->getAccessToken();
+        $this->vehiclePricesService->getAccessToken();
     }
 
     public function test_get_access_token_throws_exception_when_no_token_in_response() {
@@ -190,7 +190,7 @@ class TokenServiceTest extends TestCase {
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('No access token received from API');
 
-        $this->tokenService->getAccessToken();
+        $this->vehiclePricesService->getAccessToken();
     }
 
     public function test_make_authenticated_request_only_retries_on_401_errors() {
@@ -206,7 +206,7 @@ class TokenServiceTest extends TestCase {
         $this->expectException(APIRequestException::class);
         $this->expectExceptionMessage('API request failed');
 
-        $this->tokenService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
+        $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
 
         // Verify only one request was made (no retry)
         Http::assertSentCount(1);
