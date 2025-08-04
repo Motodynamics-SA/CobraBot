@@ -41,7 +41,7 @@ class HandleInertiaRequests extends Middleware {
             ...parent::share($request),
             'appName' => config('app.name'),
             'locale' => app()->getLocale(),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+            'quote' => ['message' => trim($message ?? ''), 'author' => trim($author ?? '')],
             'translations' => fn () => [
                 'auth' => trans('auth'),
                 'pagination' => trans('pagination'),

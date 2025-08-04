@@ -362,12 +362,20 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 					{publishResult && (
 						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
 							<h3 className="font-semibold">Success!</h3>
-							<p>{String(publishResult.message || 'Prices published successfully')}</p>
+							<p>
+								{String(publishResult.message || 'Prices published successfully')}
+							</p>
 							{publishResult.response && (
 								<details className="mt-2">
-									<summary className="cursor-pointer text-sm">View Response Details</summary>
+									<summary className="cursor-pointer text-sm">
+										View Response Details
+									</summary>
 									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-green-100 p-2 text-xs">
-										{JSON.stringify(publishResult.response as Record<string, unknown>, null, 2)}
+										{JSON.stringify(
+											publishResult.response as Record<string, unknown>,
+											null,
+											2
+										)}
 									</pre>
 								</details>
 							)}
@@ -399,12 +407,13 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 								<div className="mt-10">
 									<div className="mb-4 flex items-center justify-between">
 										<h3 className="text-lg font-semibold text-gray-900">
-											New Steering Records to be added ({entryDataRecords.length})
+											New Steering Records to be added (
+											{entryDataRecords.length})
 										</h3>
 										<button
 											onClick={() => void handlePublish()}
 											disabled={publishing}
-											className="rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+											className="rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
 										>
 											{publishing ? 'Publishing...' : 'SAVE'}
 										</button>
