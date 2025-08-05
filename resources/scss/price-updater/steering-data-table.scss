@@ -8,6 +8,36 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+
+	// Row selection styles
+	tr {
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease;
+
+		&:hover {
+			background-color: #f3f4f6 !important;
+		}
+
+		&.selected {
+			background-color: #dc2626 !important;
+			color: white !important;
+
+			&:hover {
+				background-color: #b91c1c !important;
+			}
+
+			td {
+				color: white !important;
+			}
+		}
+	}
+
+	// Selection checkbox column
+	.selection-column {
+		width: 40px;
+		text-align: center;
+	}
 }
 
 .table-col-1 {

@@ -61,10 +61,9 @@ jobs:
             - name: Set startup command
               uses: azure/cli@v1
               with:
-                inlineScript: |
-                  az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-                  az webapp config set \
-                    --name ${{ secrets.AZURE_WEBAPP_NAME }} \
-                    --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
-                    --startup-file ./azure/azure-startup.sh
-
+                  inlineScript: |
+                      az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+                      az webapp config set \
+                        --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+                        --startup-file ./azure/azure-startup.sh
