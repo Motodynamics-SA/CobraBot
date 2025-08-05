@@ -62,6 +62,7 @@ export interface PublishResponse {
 }
 
 export interface PublishRecord {
+	id?: string;
 	location_level: string;
 	location_id: string;
 	steer_type: string;
@@ -241,9 +242,7 @@ export class VehiclePricesService {
 	/**
 	 * Publish steering records to the API
 	 */
-	static async publishPrices(
-		entryData: string
-	): Promise<{
+	static async publishPrices(entryData: string): Promise<{
 		result: PublishResponse | null;
 		error: string | null;
 		processedRowsCount: number | null;
@@ -288,6 +287,81 @@ export class VehiclePricesService {
 				processedRowsCount: null,
 			};
 		}
+	}
+
+	/**
+	 * Delete steering records from the API
+	 */
+	static async deletePrices(steeringRecords: SteeringRecord[]): Promise<{
+		result: PublishResponse | null;
+		error: string | null;
+		processedRowsCount: number | null;
+	}> {
+		try {
+			const deleteRecords = {
+				steerings: this.convertToDeleteFormat(steeringRecords),
+			};
+
+			console.log('deleteRecords', JSON.stringify(deleteRecords, null, 2));
+
+			const response = await fetch('/price-updater/publish-prices', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN': this.getCsrfToken(),
+				},
+				body: JSON.stringify({ data: JSON.stringify(deleteRecords) }),
+			});
+
+			const result: PublishResponse = (await response.json()) as PublishResponse;
+
+			if (!response.ok) {
+				return {
+					result: null,
+					error: result.error || 'Failed to delete prices',
+					processedRowsCount: null,
+				};
+			}
+
+			return {
+				result,
+				error: null,
+				processedRowsCount: deleteRecords.steerings.length,
+			};
+		} catch (deleteError) {
+			console.error('Delete error:', deleteError);
+			return {
+				result: null,
+				error: 'Failed to delete steering records',
+				processedRowsCount: null,
+			};
+		}
+	}
+
+	/**
+	 * Convert steering records to delete format
+	 */
+	private static convertToDeleteFormat(steeringRecords: SteeringRecord[]): PublishRecord[] {
+		return steeringRecords.map((record) => ({
+			id: record.id,
+			location_level: record.location_level,
+			location_id: record.location_id,
+			steer_type: record.steer_type,
+			length_of_rent_from: record.length_of_rent_from,
+			length_of_rent_to: record.length_of_rent_to,
+			vehicle_type: 'VEHICLE_TYPE_P',
+			vehicle_group: record.vehicle_group,
+			yield_type: 'TYPE_LEVEL_PLAIN',
+			value_type: 'VALUE_TYPE_RATE_P',
+			value: parseFloat(record.value) || 0,
+			steer_from: record.steer_from,
+			steer_to: record.steer_to,
+			identity: record.identity,
+			channel: record.channel,
+			available_type: record.available_type,
+			remark: record.remark,
+			operation: 'DELETE_WITH_STEER_PERIOD_SPLIT',
+		}));
 	}
 
 	/**

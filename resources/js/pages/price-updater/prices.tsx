@@ -18,7 +18,9 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [publishing, setPublishing] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const [publishResult, setPublishResult] = useState<PublishResponse | null>(null);
+	const [deleteResult, setDeleteResult] = useState<PublishResponse | null>(null);
 	const [processedRowsCount, setProcessedRowsCount] = useState<number | null>(null);
 	const [refreshingData, setRefreshingData] = useState(false);
 	const [selectedCurrentRows, setSelectedCurrentRows] = useState<Set<string>>(new Set());
@@ -47,6 +49,43 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	// Function to clear all selections
 	const handleClearSelections = () => {
 		setSelectedCurrentRows(new Set());
+	};
+
+	// Function to handle delete selected records
+	const handleDeleteSelected = async () => {
+		setDeleting(true);
+		setDeleteResult(null);
+		setError(null);
+		setProcessedRowsCount(null);
+
+		try {
+			// Get the selected steering records
+			const selectedRecords = steeringRecords.filter((_, index) =>
+				selectedCurrentRows.has(`current-steering-records_${_.id || index}`)
+			);
+
+			const {
+				result,
+				error: deleteError,
+				processedRowsCount: count,
+			} = await VehiclePricesService.deletePrices(selectedRecords);
+
+			if (deleteError) {
+				setError(deleteError);
+			} else {
+				setDeleteResult(result);
+				setProcessedRowsCount(count);
+				setSelectedCurrentRows(new Set()); // Clear selections after successful delete
+
+				// Automatically refresh the data after successful deletion
+				await fetchPricesData(true);
+			}
+		} catch (error) {
+			setError('Failed to delete steering records');
+			console.error('Delete error:', error);
+		} finally {
+			setDeleting(false);
+		}
 	};
 
 	// Unified function to fetch prices data
@@ -182,6 +221,34 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 						</div>
 					)}
 					{error && <div className="mb-5 text-red-600">{error}</div>}
+					{deleteResult && (
+						<div className="mb-5 rounded bg-red-50 p-4 text-red-800">
+							<h3 className="font-semibold">Delete Success!</h3>
+							<p>{String(deleteResult.message || 'Records deleted successfully')}</p>
+							{processedRowsCount !== null && (
+								<p className="mt-2 text-sm">
+									<strong>{processedRowsCount}</strong> steering records were
+									deleted by the external API.
+								</p>
+							)}
+							{refreshingData && (
+								<div className="mt-3 flex items-center gap-2 text-sm">
+									<div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+									<span>Refreshing data...</span>
+								</div>
+							)}
+							{deleteResult.response !== undefined && (
+								<details className="mt-2">
+									<summary className="cursor-pointer text-sm">
+										View Response Details
+									</summary>
+									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-red-100 p-2 text-xs">
+										{JSON.stringify(deleteResult.response, null, 2)}
+									</pre>
+								</details>
+							)}
+						</div>
+					)}
 					{publishResult && (
 						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
 							<h3 className="font-semibold">Success!</h3>
@@ -243,16 +310,34 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 														Clear Selection
 													</button>
 													<button
-														onClick={() => {
-															// TODO: Implement delete functionality
-															console.log(
-																'Delete selected rows:',
-																Array.from(selectedCurrentRows)
-															);
-														}}
-														className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-red-700"
+														onClick={() => void handleDeleteSelected()}
+														disabled={deleting}
+														className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
 													>
-														Delete Selected ({selectedCurrentRows.size})
+														{deleting ? (
+															<>
+																<div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent"></div>
+																Deleting...
+															</>
+														) : (
+															<>
+																<svg
+																	className="delete-icon h-4 w-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																	/>
+																</svg>
+																Delete Selected (
+																{selectedCurrentRows.size})
+															</>
+														)}
 													</button>
 												</>
 											)}
