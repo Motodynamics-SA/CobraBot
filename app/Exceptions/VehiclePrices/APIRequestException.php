@@ -2,7 +2,7 @@
 
 namespace App\Exceptions\VehiclePrices;
 
-class APIRequestException extends TokenServiceException {
+class APIRequestException extends VehiclePricesAPIException {
     /**
      * @param  array<string, mixed>|null  $context
      */

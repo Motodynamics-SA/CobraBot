@@ -7,7 +7,7 @@ STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|js
 # Format PHP files
 if [ -n "$STAGED_PHP" ]; then
     echo "🔍 Formatting PHP files..."
-    echo "$STAGED_PHP" | xargs ./vendor/bin/pint
+    echo "$STAGED_PHP" | xargs ./vendor/bin/pint --parallel
     echo "$STAGED_PHP" | xargs git add
 fi
 

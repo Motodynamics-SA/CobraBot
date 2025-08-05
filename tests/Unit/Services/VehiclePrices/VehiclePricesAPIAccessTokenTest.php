@@ -5,14 +5,11 @@ namespace Tests\Unit\Services\VehiclePrices;
 use App\Exceptions\VehiclePrices\APIRequestException;
 use App\Exceptions\VehiclePrices\AuthenticationException;
 use App\Services\VehiclePrices\VehiclePricesService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-class TokenServiceTest extends TestCase {
-    use RefreshDatabase;
-
+class VehiclePricesAPIAccessTokenTest extends TestCase {
     private VehiclePricesService $vehiclePricesService;
 
     protected function setUp(): void {
