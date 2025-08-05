@@ -509,7 +509,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 										<button
 											onClick={() => void handlePublish()}
 											disabled={publishing}
-											className="rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+											className="bg-primary hover:bg-primary/90 rounded px-4 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
 										>
 											{publishing ? 'Publishing...' : 'SAVE'}
 										</button>

@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller {
         $request->authenticate();
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('price-updater.data-entry.index');
     }
 
     /**
