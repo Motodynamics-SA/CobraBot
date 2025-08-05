@@ -73,6 +73,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const [loading, setLoading] = useState(true);
 	const [publishing, setPublishing] = useState(false);
 	const [publishResult, setPublishResult] = useState<PublishResponse | null>(null);
+	const [processedRowsCount, setProcessedRowsCount] = useState<number | null>(null);
+	const [refreshingData, setRefreshingData] = useState(false);
 
 	// Function to parse date from DD/MM/YYYY format to YYYY-MM-DD
 	const parseDate = (dateStr: string): string => {
@@ -107,7 +109,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 		// Format dates for API (YYYY-MM-DD HH:mm)
 		const steerFrom = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')} 00:00`;
 		const steerTo = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')} 23:59`;
-
+		console.log('steerFrom', steerFrom);
+		console.log('steerTo', steerTo);
 		return {
 			location_id: location,
 			location_level: 'LOCATION_LEVEL_BRANCH',
@@ -141,7 +144,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 				channel: 'GIVO',
 				available_type: 'AVAILABLE_TYPE_CONDITIONAL',
 				remark: `Steering ${item.name}`,
-				operation: 'UPSERT_WITHOUT_SPLIT',
+				operation: 'UPSERT_WITH_STEER_PERIOD_SPLIT',
 			});
 
 			// Peaks
@@ -163,7 +166,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 					channel: 'GIVO',
 					available_type: 'AVAILABLE_TYPE_CONDITIONAL',
 					remark: `Peak ${item.name}`,
-					operation: 'UPSERT_WITHOUT_SPLIT',
+					operation: 'UPSERT_WITH_STEER_PERIOD_SPLIT',
 				});
 			});
 		});
@@ -171,17 +174,57 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 		return records;
 	};
 
+	// Function to refresh prices data
+	const refreshPrices = async () => {
+		setRefreshingData(true);
+		setError(null);
+
+		try {
+			// Parse the entry data
+			const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
+
+			// Analyze the data to extract location and date range
+			const apiPayload = analyzeData(parsedData);
+
+			const response = await fetch('/price-updater/fetch-prices', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN':
+						(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
+							?.content || '',
+				},
+				body: JSON.stringify({ data: JSON.stringify(apiPayload) }),
+			});
+
+			const result: ApiResponse = (await response.json()) as ApiResponse;
+			if (!response.ok) {
+				setError(result.error || 'Failed to fetch prices');
+			} else {
+				setPrices(result.prices || null);
+			}
+		} catch (parseError) {
+			setError('Failed to parse entry data');
+			console.error('Parse error:', parseError);
+		} finally {
+			setRefreshingData(false);
+		}
+	};
+
 	// Function to publish steering records
 	const handlePublish = async () => {
 		setPublishing(true);
 		setPublishResult(null);
 		setError(null);
+		setProcessedRowsCount(null);
 
 		try {
 			const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
 			const publishRecords = {
 				steerings: convertToPublishFormat(parsedData),
 			};
+
+			console.log('publishRecords', JSON.stringify(publishRecords, null, 2));
 
 			const response = await fetch('/price-updater/publish-prices', {
 				method: 'POST',
@@ -200,12 +243,19 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 				setError(result.error || 'Failed to publish prices');
 			} else {
 				setPublishResult(result);
+				// Set the count of processed rows
+				setProcessedRowsCount(publishRecords.steerings.length);
+
+				// Automatically refresh the data after successful publishing
+				setRefreshingData(true);
+				await refreshPrices();
 			}
 		} catch (publishError) {
 			setError('Failed to publish steering records');
 			console.error('Publish error:', publishError);
 		} finally {
 			setPublishing(false);
+			setRefreshingData(false);
 		}
 	};
 
@@ -311,15 +361,15 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	try {
 		const parsedEntryData: ParsedData = JSON.parse(entryData) as ParsedData;
 		entryDataRecords = mapEntryDataToSteeringRecords(parsedEntryData);
-	} catch (error) {
-		console.error('Failed to parse entry data', error);
+	} catch (parseError) {
+		console.error('Failed to parse entry data', parseError);
 	}
 
 	return (
 		<div className="min-h-screen bg-gray-50">
 			<Head title="Fetched Prices" />
 			<AppHeader />
-			<div className="max-w-3/4 sm:max-w-9/10 md:max-w-3/4 lg:max-w-3/4 mx-auto mt-10 w-full">
+			<div className="max-w-11/12 sm:max-w-11/12 md:max-w-11/12 lg:max-w-11/12 mx-auto mt-10 w-full">
 				<div className="mb-4">
 					<button
 						onClick={() => router.visit('/price-updater/data-entry')}
@@ -359,7 +409,12 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 							return <h1 className="mb-6 text-2xl font-bold">Fetched Prices</h1>;
 						}
 					})()}
-					{loading && <div>Loading...</div>}
+					{loading && (
+						<div className="flex items-center gap-2">
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+							<span>Loading initial data...</span>
+						</div>
+					)}
 					{error && <div className="mb-5 text-red-600">{error}</div>}
 					{publishResult && (
 						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
@@ -367,6 +422,18 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 							<p>
 								{String(publishResult.message || 'Prices published successfully')}
 							</p>
+							{processedRowsCount !== null && (
+								<p className="mt-2 text-sm">
+									<strong>{processedRowsCount}</strong> steering records were
+									processed by the external API.
+								</p>
+							)}
+							{refreshingData && (
+								<div className="mt-3 flex items-center gap-2 text-sm">
+									<div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
+									<span>Refreshing data...</span>
+								</div>
+							)}
 							{publishResult.response !== undefined && (
 								<details className="mt-2">
 									<summary className="cursor-pointer text-sm">
@@ -383,9 +450,40 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 						<>
 							{steeringRecords.length > 0 ? (
 								<div className="mt-10">
-									<h3 className="mb-4 text-lg font-semibold text-gray-900">
-										Current Steering Records ({steeringRecords.length})
-									</h3>
+									<div className="mb-4 flex items-center justify-between">
+										<h3 className="text-lg font-semibold text-gray-900">
+											Current Steering Records ({steeringRecords.length})
+										</h3>
+										<button
+											onClick={() => void refreshPrices()}
+											disabled={refreshingData}
+											className="flex items-center gap-2 rounded bg-gray-600 px-3 py-1 text-sm text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+										>
+											{refreshingData ? (
+												<>
+													<div className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent"></div>
+													Refreshing...
+												</>
+											) : (
+												<>
+													<svg
+														className="h-3 w-3"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+														/>
+													</svg>
+													Refresh
+												</>
+											)}
+										</button>
+									</div>
 									<SteeringDataTable
 										steerings={steeringRecords}
 										id="current-steering-records"

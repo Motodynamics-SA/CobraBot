@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../../scss/price-updater/steering-data-table.scss';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface SteeringRecord {
 	id: string;
@@ -224,7 +225,22 @@ const SteeringDataTable: React.FC<{ steerings: SteeringRecord[]; id: string }> =
 								{formatDateTime(steering.created_at)}
 							</td>
 							<td className="px-3 py-2 text-sm text-gray-900">
-								{steering.remark || '-'}
+								{steering.remark ? (
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<span className="block cursor-help truncate">
+												{steering.remark}
+											</span>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p className="max-w-xs break-words">
+												{steering.remark}
+											</p>
+										</TooltipContent>
+									</Tooltip>
+								) : (
+									'-'
+								)}
 							</td>
 						</tr>
 					))}
