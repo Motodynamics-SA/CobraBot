@@ -22,10 +22,8 @@ class VehicleAPIController extends Controller {
 
         $inputData = json_decode($validated['data'], true);
 
-        Log::info('Input Data: ' . json_encode($inputData));
-
         // Validate the required fields in the analyzed data
-        $requiredFields = ['location_id', 'location_level', 'steer_from', 'steer_to', 'limit', 'offset'];
+        $requiredFields = ['location_id', 'location_level', 'steer_from', 'steer_to'];
         foreach ($requiredFields as $field) {
             if (! isset($inputData[$field])) {
                 return response()->json([
