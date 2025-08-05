@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useEffect, useState, useCallback } from 'react';
+import { FormEventHandler, useEffect, useState, useCallback, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import 'altcha';
 
@@ -40,6 +40,7 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 	};
 	const { t } = useTranslations();
 	const [altchaError, setAltchaError] = useState<string>('');
+	const altchaRef = useRef<HTMLElement>(null);
 
 	// Handler for Altcha state change
 	const handleAltchaStateChange = useCallback(
@@ -53,15 +54,12 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 		[setData, setAltchaError]
 	);
 
-	// Now define the useCallback hooks
-	const setAltchaRef = useCallback(
-		(node: HTMLElement | null) => {
-			if (node) {
-				node.addEventListener('statechange', handleAltchaStateChange as EventListener);
-			}
-		},
-		[handleAltchaStateChange]
-	);
+	useEffect(() => {
+		const node = altchaRef.current;
+		if (node) {
+			node.addEventListener('statechange', handleAltchaStateChange as EventListener);
+		}
+	}, [handleAltchaStateChange]);
 
 	useEffect(() => {
 		if (token && redirectTo) {
@@ -201,7 +199,7 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 									hidelogo
 									hidefooter
 									challengeurl="/altcha-challenge"
-									ref={setAltchaRef}
+									ref={altchaRef}
 								/>
 							</div>
 							{pageErrors.captcha && <InputError message={pageErrors.captcha} />}
