@@ -253,8 +253,6 @@ export class VehiclePricesService {
 				steerings: this.convertToPublishFormat(parsedData),
 			};
 
-			console.log('publishRecords', JSON.stringify(publishRecords, null, 2));
-
 			const response = await fetch('/price-updater/publish-prices', {
 				method: 'POST',
 				headers: {
@@ -301,8 +299,6 @@ export class VehiclePricesService {
 			const deleteRecords = {
 				steerings: this.convertToDeleteFormat(steeringRecords),
 			};
-
-			console.log('deleteRecords', JSON.stringify(deleteRecords, null, 2));
 
 			const response = await fetch('/price-updater/publish-prices', {
 				method: 'POST',

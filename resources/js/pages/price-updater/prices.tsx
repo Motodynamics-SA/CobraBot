@@ -78,8 +78,14 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 				setProcessedRowsCount(count);
 				setSelectedCurrentRows(new Set()); // Clear selections after successful deletetion
 
+				// Show the refreshing indicator immediately
+				setRefreshingData(true);
+
+				// Wait 3 seconds while showing the loader
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
 				// Automatically refresh the data after successful deletion
-				await refreshPrices();
+				await fetchPricesData(true);
 			}
 		} catch (error) {
 			setError('Failed to delete steering records');
@@ -92,6 +98,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	// Unified function to fetch prices data
 	const fetchPricesData = useCallback(
 		async (isRefreshing = false) => {
+			console.log('fetchPricesData', isRefreshing);
 			if (isRefreshing) {
 				setRefreshingData(true);
 			} else {
@@ -101,6 +108,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 
 			try {
 				const result = await VehiclePricesService.fetchPrices(entryData);
+				console.log('result', result);
 
 				if (result.error) {
 					setError(result.error);
@@ -146,6 +154,12 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 			} else {
 				setPublishResult(result);
 				setProcessedRowsCount(count);
+
+				// Show the refreshing indicator immediately
+				setRefreshingData(true);
+
+				// Wait 3 seconds while showing the loader
+				await new Promise((resolve) => setTimeout(resolve, 3000));
 
 				// Automatically refresh the data after successful publishing
 				await fetchPricesData(true);
@@ -234,8 +248,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 								</p>
 							)}
 							{refreshingData && (
-								<div className="mt-3 flex items-center gap-2 text-sm">
-									<div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
+								<div className="mt-3 flex items-center gap-2 text-base font-medium">
+									<div className="h-5 w-5 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
 									<span>Refreshing data...</span>
 								</div>
 							)}
@@ -254,8 +268,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 								</p>
 							)}
 							{refreshingData && (
-								<div className="mt-3 flex items-center gap-2 text-sm">
-									<div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
+								<div className="mt-3 flex items-center gap-2 text-base font-medium">
+									<div className="h-5 w-5 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
 									<span>Refreshing data...</span>
 								</div>
 							)}
@@ -388,9 +402,9 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 										<button
 											onClick={() => void handlePublish()}
 											disabled={publishing}
-											className="bg-primary hover:bg-primary/90 rounded px-4 py-2 text-white transition-colors hover:cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400"
+											className="bg-primary hover:bg-primary/90 text-bold rounded px-4 py-2 text-xl font-bold text-white transition-colors hover:cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400"
 										>
-											{publishing ? 'Publishing...' : 'SAVE'}
+											{publishing ? 'Publishing...' : 'SAVE NEW RECORDS'}
 										</button>
 									</div>
 									<SteeringDataTable
