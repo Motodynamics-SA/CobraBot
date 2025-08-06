@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Run Gitleaks secret scanning
+echo "🔒 Running Gitleaks secret scan..."
+if [ -f "./gitleaks" ]; then
+    ./gitleaks protect --verbose --staged
+    GITLEAKS_EXIT_CODE=$?
+    if [ $GITLEAKS_EXIT_CODE -ne 0 ]; then
+        echo "❌ Gitleaks found potential secrets. Commit blocked."
+        echo "Please remove the secrets and try again."
+        echo "If this is a false positive, you can use --no-verify flag to bypass."
+        exit 1
+    fi
+    echo "✅ No secrets detected by Gitleaks."
+else
+    echo "⚠️  Gitleaks not found in project root. Skipping secret scan."
+fi
+
 # Store list of staged files
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=d | grep ".php$" || true)
 STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|jsx|ts|tsx|scss)$" || true)

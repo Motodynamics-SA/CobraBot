@@ -226,6 +226,13 @@ Also, don't forget to update the `CHANGELOG.md` file with the new version name, 
 
 ## Security
 
+This project implements several security measures:
+
+- **Secret Scanning**: [Gitleaks](https://gitleaks.io/) integration prevents accidental exposure of sensitive information like API keys, passwords, and tokens. See [GITLEAKS-SECURITY.md](GITLEAKS-SECURITY.md) for detailed configuration and usage.
+- **Security Headers**: Custom middleware adds security headers (CSP, HSTS, etc.)
+- **CSRF Protection**: Laravel's built-in CSRF protection
+- **Role-based Access Control**: Using Spatie Laravel Permission package
+
 If you discover any security-related issues, please email `info[at]scify.org`, instead of using the issue tracker.
 
 ## License

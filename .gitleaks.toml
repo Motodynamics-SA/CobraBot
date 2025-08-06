@@ -1,0 +1,216 @@
+# Gitleaks configuration for Laravel applications
+# This configuration is specifically tailored for Laravel projects
+# and includes rules to detect common secrets and sensitive data
+
+title = "Laravel Gitleaks Configuration"
+
+[extend]
+# Use default gitleaks configuration as base
+useDefault = true
+
+[[rules]]
+id = "laravel-app-key"
+description = "Laravel Application Key"
+regex = '''APP_KEY\s*=\s*["']?base64:[A-Za-z0-9+/]{43}=?["']?'''
+keywords = ["APP_KEY"]
+
+[[rules]]
+id = "laravel-app-key-plain"
+description = "Laravel Application Key (Plain)"
+regex = '''APP_KEY\s*=\s*["']?[A-Za-z0-9]{32}["']?'''
+keywords = ["APP_KEY"]
+
+[[rules]]
+id = "database-password"
+description = "Database Password"
+regex = '''DB_PASSWORD\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["DB_PASSWORD"]
+
+[[rules]]
+id = "mail-password"
+description = "Mail Password"
+regex = '''MAIL_PASSWORD\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["MAIL_PASSWORD"]
+
+[[rules]]
+id = "redis-password"
+description = "Redis Password"
+regex = '''REDIS_PASSWORD\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["REDIS_PASSWORD"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''AWS_ACCESS_KEY_ID\s*=\s*["']?[A-Z0-9]{20}["']?'''
+keywords = ["AWS_ACCESS_KEY_ID"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''AWS_SECRET_ACCESS_KEY\s*=\s*["']?[A-Za-z0-9+/]{40}["']?'''
+keywords = ["AWS_SECRET_ACCESS_KEY"]
+
+[[rules]]
+id = "stripe-secret-key"
+description = "Stripe Secret Key"
+regex = '''sk_(?:test_|live_)[0-9a-zA-Z]{24}'''
+keywords = ["sk_test_", "sk_live_"]
+
+[[rules]]
+id = "stripe-publishable-key"
+description = "Stripe Publishable Key"
+regex = '''pk_(?:test_|live_)[0-9a-zA-Z]{24}'''
+keywords = ["pk_test_", "pk_live_"]
+
+[[rules]]
+id = "jwt-secret"
+description = "JWT Secret"
+regex = '''JWT_SECRET\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["JWT_SECRET"]
+
+[[rules]]
+id = "sanctum-secret"
+description = "Laravel Sanctum Secret"
+regex = '''SANCTUM_STATEFUL_DOMAINS\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["SANCTUM_STATEFUL_DOMAINS"]
+
+[[rules]]
+id = "session-encrypt-key"
+description = "Session Encryption Key"
+regex = '''SESSION_ENCRYPT_KEY\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["SESSION_ENCRYPT_KEY"]
+
+[[rules]]
+id = "broadcast-key"
+description = "Broadcasting Key"
+regex = '''BROADCAST_KEY\s*=\s*["']?[^\s"']+["']?'''
+keywords = ["BROADCAST_KEY"]
+
+[[rules]]
+id = "pusher-app-key"
+description = "Pusher App Key"
+regex = '''PUSHER_APP_KEY\s*=\s*["']?[a-z0-9]{20}["']?'''
+keywords = ["PUSHER_APP_KEY"]
+
+[[rules]]
+id = "pusher-app-secret"
+description = "Pusher App Secret"
+regex = '''PUSHER_APP_SECRET\s*=\s*["']?[a-z0-9]{20}["']?'''
+keywords = ["PUSHER_APP_SECRET"]
+
+[[rules]]
+id = "facebook-client-secret"
+description = "Facebook Client Secret"
+regex = '''FACEBOOK_CLIENT_SECRET\s*=\s*["']?[a-f0-9]{32}["']?'''
+keywords = ["FACEBOOK_CLIENT_SECRET"]
+
+[[rules]]
+id = "google-client-secret"
+description = "Google Client Secret"
+regex = '''GOOGLE_CLIENT_SECRET\s*=\s*["']?[A-Za-z0-9_-]{24}["']?'''
+keywords = ["GOOGLE_CLIENT_SECRET"]
+
+[[rules]]
+id = "twitter-client-secret"
+description = "Twitter Client Secret"
+regex = '''TWITTER_CLIENT_SECRET\s*=\s*["']?[A-Za-z0-9]{50}["']?'''
+keywords = ["TWITTER_CLIENT_SECRET"]
+
+[[rules]]
+id = "github-client-secret"
+description = "GitHub Client Secret"
+regex = '''GITHUB_CLIENT_SECRET\s*=\s*["']?[a-f0-9]{40}["']?'''
+keywords = ["GITHUB_CLIENT_SECRET"]
+
+[[rules]]
+id = "sentry-dsn"
+description = "Sentry DSN"
+regex = '''SENTRY_DSN\s*=\s*["']?https://[a-f0-9]{32}@[^/]+\.ingest\.sentry\.io/[0-9]+["']?'''
+keywords = ["SENTRY_DSN"]
+
+[[rules]]
+id = "twilio-auth-token"
+description = "Twilio Auth Token"
+regex = '''TWILIO_AUTH_TOKEN\s*=\s*["']?[a-f0-9]{32}["']?'''
+keywords = ["TWILIO_AUTH_TOKEN"]
+
+[[rules]]
+id = "slack-webhook"
+description = "Slack Webhook URL"
+regex = '''https://hooks\.slack\.com/services/[A-Z0-9]{9}/[A-Z0-9]{9}/[A-Za-z0-9]{24}'''
+keywords = ["hooks.slack.com"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key Pattern"
+regex = '''(?i)api[_-]?key\s*[=:]\s*["']?[a-z0-9]{32,}["']?'''
+keywords = ["api_key", "api-key", "apikey"]
+
+[[rules]]
+id = "generic-token"
+description = "Generic Token Pattern"
+regex = '''(?i)(?:token|secret)\s*[=:]\s*["']?[a-z0-9]{32,}["']?'''
+keywords = ["token", "secret"]
+
+# Laravel specific exclusions
+[allowlist]
+description = "Allowlisted files and patterns for Laravel"
+files = [
+    ".env.example",
+    ".env.ddev.example", 
+    ".env.native.example",
+    ".env.testing",
+    ".env.dusk.local",
+    "LOCAL-DEVELOPMENT.md",
+    "azure/deploy-laravel-to-azure.sh",
+]
+
+paths = [
+    # Exclude vendor directories and compiled assets
+    "vendor",
+    "node_modules", 
+    "public/build",
+    "storage/framework/cache",
+    "storage/framework/sessions",
+    "storage/framework/views",
+    "coverage",
+    "bootstrap/cache",
+    # Exclude test files that might contain dummy data
+    "tests",
+    # Exclude migration files (they don't contain secrets)
+    "database/migrations",
+    # Exclude compiled assets and common non-secret files
+    "composer.lock",
+    "package-lock.json",
+    # Exclude template files
+    ".github/templates",
+]
+
+regexes = [
+    # Allow placeholder values in .env.example
+    '''APP_KEY\s*=\s*["']?$''',
+    '''DB_PASSWORD\s*=\s*["']?$''',
+    '''MAIL_PASSWORD\s*=\s*["']?null["']?''',
+    '''REDIS_PASSWORD\s*=\s*["']?null["']?''',
+    '''AWS_ACCESS_KEY_ID\s*=\s*["']?$''',
+    '''AWS_SECRET_ACCESS_KEY\s*=\s*["']?$''',
+    # Allow common development/test passwords
+    '''DB_PASSWORD\s*=\s*["']?(?:db|pass|test|password)["']?''',
+    '''DB_PASSWORD\s*=\s*["']?\$[A-Z_]+["']?''',  # Environment variables
+    '''DB_PASSWORD=\{\{\s*[A-Z_]+\s*\}\}''',  # Jinja2 template variables
+    # Allow test/dummy values
+    '''(?i)test[_-]?key''',
+    '''(?i)dummy[_-]?key''',
+    '''(?i)example[_-]?key''',
+    '''(?i)fake[_-]?key''',
+    '''(?i)placeholder''',
+    # Allow base64 test strings with repeating characters
+    '''base64:[a]{40,}=?''',
+    # Allow localhost URLs
+    '''127\.0\.0\.1''',
+    '''localhost''',
+    # Allow development environment values
+    '''\.ddev\.site''',
+    '''\.test$''',
+    '''\.local$''',
+]
