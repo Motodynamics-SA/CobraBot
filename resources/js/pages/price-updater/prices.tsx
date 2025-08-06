@@ -55,6 +55,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const handleDeleteSelected = async () => {
 		setDeleting(true);
 		setDeleteResult(null);
+		setPublishResult(null);
 		setError(null);
 		setProcessedRowsCount(null);
 
@@ -75,10 +76,10 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 			} else {
 				setDeleteResult(result);
 				setProcessedRowsCount(count);
-				setSelectedCurrentRows(new Set()); // Clear selections after successful delete
+				setSelectedCurrentRows(new Set()); // Clear selections after successful deletetion
 
 				// Automatically refresh the data after successful deletion
-				await fetchPricesData(true);
+				await refreshPrices();
 			}
 		} catch (error) {
 			setError('Failed to delete steering records');
@@ -129,6 +130,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const handlePublish = async () => {
 		setPublishing(true);
 		setPublishResult(null);
+		setDeleteResult(null);
 		setError(null);
 		setProcessedRowsCount(null);
 
@@ -222,8 +224,8 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 					)}
 					{error && <div className="mb-5 text-red-600">{error}</div>}
 					{deleteResult && (
-						<div className="mb-5 rounded bg-red-50 p-4 text-red-800">
-							<h3 className="font-semibold">Delete Success!</h3>
+						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
+							<h3 className="font-semibold">Success!</h3>
 							<p>{String(deleteResult.message || 'Records deleted successfully')}</p>
 							{processedRowsCount !== null && (
 								<p className="mt-2 text-sm">
@@ -233,19 +235,9 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 							)}
 							{refreshingData && (
 								<div className="mt-3 flex items-center gap-2 text-sm">
-									<div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+									<div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
 									<span>Refreshing data...</span>
 								</div>
-							)}
-							{deleteResult.response !== undefined && (
-								<details className="mt-2">
-									<summary className="cursor-pointer text-sm">
-										View Response Details
-									</summary>
-									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-red-100 p-2 text-xs">
-										{JSON.stringify(deleteResult.response, null, 2)}
-									</pre>
-								</details>
 							)}
 						</div>
 					)}
@@ -266,16 +258,6 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 									<div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
 									<span>Refreshing data...</span>
 								</div>
-							)}
-							{publishResult.response !== undefined && (
-								<details className="mt-2">
-									<summary className="cursor-pointer text-sm">
-										View Response Details
-									</summary>
-									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-green-100 p-2 text-xs">
-										{JSON.stringify(publishResult.response, null, 2)}
-									</pre>
-								</details>
 							)}
 						</div>
 					)}
@@ -312,11 +294,12 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 													<button
 														onClick={() => void handleDeleteSelected()}
 														disabled={deleting}
+														id="delete-selected-button"
 														className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
 													>
 														{deleting ? (
 															<>
-																<div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent"></div>
+																<div className="loader-icon h-4 w-4 animate-spin rounded-full border border-white border-t-transparent"></div>
 																Deleting...
 															</>
 														) : (
@@ -383,12 +366,16 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 								</div>
 							) : (
 								<div className="mb-6">
-									<h3 className="mb-4 text-lg font-semibold text-gray-900">
-										Raw API Response
-									</h3>
-									<pre className="overflow-x-auto whitespace-pre-wrap break-all rounded border bg-gray-100 p-4 text-xs">
-										{JSON.stringify(prices, null, 2)}
-									</pre>
+									<div className="rounded bg-blue-50 p-4 text-blue-800">
+										<h3 className="mb-2 text-lg font-semibold">
+											No Current Steering Records
+										</h3>
+										<p className="text-sm">
+											No existing steering records were found for the
+											specified location and date range. You can add new
+											records using the form below.
+										</p>
+									</div>
 								</div>
 							)}
 							{entryDataRecords.length > 0 && (

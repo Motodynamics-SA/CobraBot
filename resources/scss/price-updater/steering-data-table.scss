@@ -40,11 +40,14 @@
 	}
 }
 
-.delete-icon {
-	display: inline-block;
-	margin-right: 5px;
-	margin-top: -4px;
-	vertical-align: middle;
+#delete-selected-button {
+	.delete-icon,
+	.loader-icon {
+		display: inline-block;
+		margin-right: 8px;
+		margin-top: -4px;
+		vertical-align: middle;
+	}
 }
 
 .table-col-1 {
