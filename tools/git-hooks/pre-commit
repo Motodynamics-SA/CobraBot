@@ -18,7 +18,8 @@ fi
 
 # Store list of staged files
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=d | grep ".php$" || true)
-STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|jsx|ts|tsx|scss)$" || true)
+STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|jsx|ts|tsx)$" || true)
+STAGED_SCSS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.scss|\.css$" || true)
 
 # Format PHP files
 if [ -n "$STAGED_PHP" ]; then
@@ -32,6 +33,13 @@ if [ -n "$STAGED_JS_TS" ]; then
     echo "🔍 Formatting JS/TS/SCSS files..."
     echo "$STAGED_JS_TS" | xargs npm run format:staged
     echo "$STAGED_JS_TS" | xargs git add
+fi
+
+# Format SCSS files
+if [ -n "$STAGED_SCSS" ]; then
+    echo "🔍 Formatting SCSS files..."
+    echo "$STAGED_SCSS" | xargs npm run format:staged:styles
+    echo "$STAGED_SCSS" | xargs git add
 fi
 
 exit 0
