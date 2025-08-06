@@ -29,18 +29,18 @@ jobs:
               run: |
                   # Download Gitleaks binary
                   curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz
-                  
+
                   # Run Gitleaks scan
                   echo "🔍 Running Gitleaks secret scan..."
                   ./gitleaks detect --config=.gitleaks.toml --verbose || exit_code=$?
-                  
+
                   # Check results
                   if [ "${exit_code:-0}" -eq 1 ]; then
                       echo "❌ Gitleaks found potential secrets in the repository!"
                       echo "Please review the findings above and remove any secrets before merging."
                       exit 1
                   fi
-                  
+
                   echo "✅ No secrets detected by Gitleaks - repository is clean!"
 
     dependency-scan:
@@ -62,6 +62,9 @@ jobs:
               with:
                   node-version: '22'
                   cache: 'npm'
+
+            - name: Copy Environment File
+              run: cp .env.testing .env
 
             - name: Install PHP Dependencies
               run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
