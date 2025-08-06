@@ -92,6 +92,9 @@ jobs:
                   php-version: 8.4
                   tools: composer:v2
 
+            - name: Copy Environment File
+              run: cp .env.testing .env
+
             - name: Install Dependencies
               run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
