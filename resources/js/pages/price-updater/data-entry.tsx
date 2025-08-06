@@ -20,11 +20,15 @@ const DataEntryPage: React.FC = () => {
 			return;
 		}
 		setSubmitting(true);
+
+		// Use Inertia with a full page reload to ensure proper session state
 		router.post(
 			'/price-updater/data-entry',
 			{ data: value },
 			{
 				onFinish: () => setSubmitting(false),
+				preserveScroll: false,
+				preserveState: false,
 			}
 		);
 	};

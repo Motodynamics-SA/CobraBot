@@ -47,6 +47,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Web middleware
         $middleware->web(append: [
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

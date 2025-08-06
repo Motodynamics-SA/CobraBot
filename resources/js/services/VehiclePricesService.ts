@@ -94,8 +94,52 @@ export interface ApiPayload {
 export class VehiclePricesService {
 	private static getCsrfToken(): string {
 		return (
-			(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
+			(document.querySelector('meta[name="app-csrf-token"]') as HTMLMetaElement)?.content ||
+			''
 		);
+	}
+
+	/**
+	 * Make API request with session establishment and retry logic
+	 */
+	private static async makeApiRequest(
+		url: string,
+		options: RequestInit,
+		retryCount = 0
+	): Promise<Response> {
+		try {
+			// Get token from meta tag
+			const csrfToken = this.getCsrfToken();
+			console.log('Using CSRF token:', csrfToken ? 'valid' : 'empty');
+
+			// Update headers with CSRF token
+			const updatedOptions: RequestInit = {
+				...options,
+				credentials: 'same-origin' as RequestCredentials,
+				headers: {
+					...options.headers,
+					'X-CSRF-TOKEN': csrfToken,
+					Accept: 'application/json',
+				},
+			};
+
+			const response = await fetch(url, updatedOptions);
+
+			// If we get a 419 error and haven't retried yet, try again
+			if (response.status === 419 && retryCount === 0) {
+				console.log('CSRF token mismatch, retrying after session refresh...');
+
+				// Try to refresh the session and get a new token
+				await new Promise((resolve) => setTimeout(resolve, 200));
+
+				return this.makeApiRequest(url, options, retryCount + 1);
+			}
+
+			return response;
+		} catch (error) {
+			console.error('API request failed:', error);
+			throw error;
+		}
 	}
 
 	/**
@@ -217,11 +261,10 @@ export class VehiclePricesService {
 			// Analyze the data to extract location and date range
 			const apiPayload = this.analyzeData(parsedData);
 
-			const response = await fetch('/price-updater/fetch-prices', {
+			const response = await this.makeApiRequest('/price-updater/fetch-prices', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': this.getCsrfToken(),
 				},
 				body: JSON.stringify({ data: JSON.stringify(apiPayload) }),
 			});
@@ -253,11 +296,10 @@ export class VehiclePricesService {
 				steerings: this.convertToPublishFormat(parsedData),
 			};
 
-			const response = await fetch('/price-updater/publish-prices', {
+			const response = await this.makeApiRequest('/price-updater/publish-prices', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': this.getCsrfToken(),
 				},
 				body: JSON.stringify({ data: JSON.stringify(publishRecords) }),
 			});
@@ -300,11 +342,10 @@ export class VehiclePricesService {
 				steerings: this.convertToDeleteFormat(steeringRecords),
 			};
 
-			const response = await fetch('/price-updater/publish-prices', {
+			const response = await this.makeApiRequest('/price-updater/publish-prices', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': this.getCsrfToken(),
 				},
 				body: JSON.stringify({ data: JSON.stringify(deleteRecords) }),
 			});

@@ -16,6 +16,7 @@ class VehicleAPIController extends Controller {
     ) {}
 
     public function fetchPrices(Request $request): JsonResponse {
+        Log::info('Fetch Prices Request: ' . json_encode($request->all()));
         $validated = $request->validate([
             'data' => 'required|json',
         ]);

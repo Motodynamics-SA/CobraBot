@@ -9,7 +9,7 @@ use App\Http\Controllers\VehiclePrices\VehiclePricesController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->to(route('dashboard'))->withHeaders([
+    return redirect()->to(route('price-updater.prices.index'))->withHeaders([
         'Cache-Control' => 'no-cache, no-store, must-revalidate',
         'Pragma' => 'no-cache',
         'Expires' => '0',

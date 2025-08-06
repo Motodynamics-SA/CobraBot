@@ -29,8 +29,8 @@ interface LoginProps {
 
 export default function Login({ status, canResetPassword, token, redirectTo }: LoginProps) {
 	const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
-		email: '',
-		password: '',
+		email: 'admin@scify.org',
+		password: 'scify123',
 		remember: false,
 		captcha: '',
 	});
