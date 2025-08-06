@@ -25,12 +25,29 @@ jobs:
                   # Fetch full history for comprehensive scan
                   fetch-depth: 0
 
-            - name: Run Gitleaks
-              uses: gitleaks/gitleaks-action@v2
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Download and Run Gitleaks
+              run: |
+                  # Download Gitleaks binary
+                  curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz
+                  
+                  # Run Gitleaks scan
+                  ./gitleaks detect --config=.gitleaks.toml --verbose --report-format=sarif --report-path=gitleaks-report.sarif || exit_code=$?
+                  
+                  # If leaks found, fail the job
+                  if [ "${exit_code:-0}" -eq 1 ]; then
+                      echo "🔒 Gitleaks found secrets in the repository!"
+                      ./gitleaks detect --config=.gitleaks.toml --verbose
+                      exit 1
+                  fi
+                  
+                  echo "✅ No secrets detected by Gitleaks"
+            
+            - name: Upload SARIF file
+              if: always()
+              uses: github/codeql-action/upload-sarif@v3
               with:
-                  config-path: .gitleaks.toml
+                  sarif_file: gitleaks-report.sarif
+                  category: gitleaks
 
     dependency-scan:
         name: Dependency Security Scan
