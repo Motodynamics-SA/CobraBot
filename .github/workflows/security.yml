@@ -73,7 +73,7 @@ jobs:
               run: npm ci --production
 
             - name: Run PHP Security Audit
-              run: composer audit --audit-format=table
+              run: composer audit --format=table
 
             - name: Run Node Security Audit
               run: npm audit --audit-level=moderate
