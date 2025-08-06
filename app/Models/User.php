@@ -40,6 +40,8 @@ class User extends Authenticatable {
         'email',
         'password',
         'deleted_at',
+        'provider',
+        'provider_id',
     ];
 
     /**

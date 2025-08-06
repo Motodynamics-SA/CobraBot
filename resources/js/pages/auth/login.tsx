@@ -72,25 +72,6 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 		}
 	}, [token, redirectTo]);
 
-	useEffect(() => {
-		// Only run on mount
-		fetch('/api/v1/user/info', {
-			credentials: 'same-origin',
-			headers: {
-				Accept: 'application/json',
-			},
-		})
-			.then((res) => {
-				if (res.ok) {
-					// User is authenticated, force reload so backend can redirect
-					window.location.reload();
-				}
-			})
-			.catch(() => {
-				// Network error, do nothing
-			});
-	}, []);
-
 	const submit: FormEventHandler = (e) => {
 		e.preventDefault();
 		if (!data.captcha) {
@@ -111,6 +92,32 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 			<div className="mx-auto flex w-full max-w-5xl flex-col items-stretch justify-center gap-8 md:flex-row">
 				{/* Left: Log in with your account */}
 				<section className="flex flex-1 flex-col justify-center rounded-lg border border-gray-200 bg-white p-6 shadow">
+					<div className="flex flex-col gap-6">
+						<a href={route('login.microsoft')}>
+							<Button
+								className="w-full border-2 border-gray-200 px-4 py-5 text-lg hover:border-gray-300"
+								variant="secondary"
+							>
+								<svg
+									className="mr-2 h-5 w-5"
+									viewBox="0 0 21 21"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path d="M10 0H0V10H10V0Z" fill="#F25022" />
+									<path d="M21 0H11V10H21V0Z" fill="#7FBA00" />
+									<path d="M10 11H0V21H10V11Z" fill="#00A4EF" />
+									<path d="M21 11H11V21H21V11Z" fill="#FFB900" />
+								</svg>
+								Login with Microsoft
+							</Button>
+						</a>
+					</div>
+					<div className="my-4 flex items-center">
+						<hr className="w-full" />
+						<span className="p-2 text-gray-400">OR</span>
+						<hr className="w-full" />
+					</div>
 					<form className="flex flex-col gap-6" onSubmit={submit}>
 						{pageErrors.login && (
 							<div className="bg-destructive/15 rounded-md p-4">

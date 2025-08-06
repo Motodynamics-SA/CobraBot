@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +16,8 @@ class AuthenticatedSessionController extends Controller {
      */
     public function create(Request $request): InertiaResponse|RedirectResponse {
         if (auth()->check()) {
-            // User is already logged in, redirect to dashboard
-            return redirect()->route(route: 'home');
+            // User is already logged in, redirect to data entry page
+            return redirect()->route(route: 'price-updater.data-entry.index');
         }
 
         return Inertia::render('auth/login', [
@@ -34,7 +33,7 @@ class AuthenticatedSessionController extends Controller {
      *
      * @param  LoginRequest  $request  The incoming login request containing credentials
      *
-     * @return RedirectResponse Returns RedirectResponse to dashboard
+     * @return RedirectResponse Returns RedirectResponse to data entry page
      *                          or an error response if authentication fails
      */
     public function store(LoginRequest $request): RedirectResponse {
