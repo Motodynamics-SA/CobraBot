@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exceptions\VehiclePrices;
 
 use App\Exceptions\ExternalAPIException;
@@ -11,10 +13,10 @@ class VehiclePricesAPIException extends ExternalAPIException {
     public function __construct(
         string $message = '',
         int $code = 0,
-        ?\Exception $previous = null,
-        private ?array $context = null
+        ?\Exception $exception = null,
+        private readonly ?array $context = null
     ) {
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message, $code, $exception);
     }
 
     /**

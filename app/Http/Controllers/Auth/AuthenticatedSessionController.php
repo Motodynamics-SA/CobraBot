@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -31,14 +33,14 @@ class AuthenticatedSessionController extends Controller {
      *
      *
      *
-     * @param  LoginRequest  $request  The incoming login request containing credentials
+     * @param  LoginRequest  $loginRequest  The incoming login request containing credentials
      *
      * @return RedirectResponse Returns RedirectResponse to data entry page
      *                          or an error response if authentication fails
      */
-    public function store(LoginRequest $request): RedirectResponse {
-        $request->authenticate();
-        $request->session()->regenerate();
+    public function store(LoginRequest $loginRequest): RedirectResponse {
+        $loginRequest->authenticate();
+        $loginRequest->session()->regenerate();
 
         return redirect()->route('price-updater.data-entry.index');
     }

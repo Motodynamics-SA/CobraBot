@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -15,13 +17,13 @@ class RestrictApiAccess {
         $origin = $request->header('origin');
         $referer = $request->header('referer');
 
-        $appUrl = rtrim(config('app.url'), '/');
+        $appUrl = rtrim((string) config('app.url'), '/');
         $allowedOrigins = [$appUrl];
 
         $originAllowed = $origin && in_array($origin, $allowedOrigins);
         $refererAllowed = $referer && str_starts_with($referer, $appUrl);
 
-        if (! ($originAllowed || $refererAllowed)) {
+        if (! $originAllowed && ! $refererAllowed) {
             Log::warning('Blocked API access', [
                 'origin' => $origin,
                 'referer' => $referer,

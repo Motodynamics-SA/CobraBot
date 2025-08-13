@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\User;
 
 use App\Enums\RolesEnum;
@@ -58,8 +60,8 @@ class UserService {
         return User::query()
             ->when($search, function ($query, $search): void {
                 $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                    $query->where('name', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('email', 'like', sprintf('%%%s%%', $search));
                 });
             })
             ->withTrashed()
@@ -82,17 +84,13 @@ class UserService {
         // If user is not admin, further filter available roles
         if (! $user->hasRole(RolesEnum::ADMINISTRATOR->value)) {
             $roles = $roles->filter(
-                fn (RolesEnum $role) => in_array($role->value, [
-                    RolesEnum::USER_MANAGER->value,
-                ])
+                fn (RolesEnum $rolesEnum): bool => $rolesEnum->value == RolesEnum::USER_MANAGER->value
             );
         }
 
-        return $roles->map(function (RolesEnum $role) {
-            return [
-                'name' => $role->value,
-                'label' => 'roles.' . $role->value,
-            ];
-        })->values();
+        return $roles->map(fn (RolesEnum $rolesEnum): array => [
+            'name' => $rolesEnum->value,
+            'label' => 'roles.' . $rolesEnum->value,
+        ])->values();
     }
 }

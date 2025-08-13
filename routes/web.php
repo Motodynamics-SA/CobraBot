@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRestoreController;
@@ -8,13 +10,11 @@ use App\Http\Controllers\VehiclePrices\VehicleAPIController;
 use App\Http\Controllers\VehiclePrices\VehiclePricesController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->to(route('price-updater.prices.index'))->withHeaders([
-        'Cache-Control' => 'no-cache, no-store, must-revalidate',
-        'Pragma' => 'no-cache',
-        'Expires' => '0',
-    ]);
-})->name('home');
+Route::get('/', fn () => redirect()->to(route('price-updater.prices.index'))->withHeaders([
+    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+    'Pragma' => 'no-cache',
+    'Expires' => '0',
+]))->name('home');
 
 Route::middleware(['auth'])->group(function (): void {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Dashboard;
 
 use App\Enums\RolesEnum;
@@ -43,11 +45,9 @@ class DashboardService {
      * @return array<string, int>
      */
     private function getUsersByRole(): array {
-        return collect(RolesEnum::cases())->mapWithKeys(function (RolesEnum $role) {
-            return [
-                $role->value => User::role($role->value)->count(),
-            ];
-        })->toArray();
+        return collect(RolesEnum::cases())->mapWithKeys(fn (RolesEnum $rolesEnum) => [
+            $rolesEnum->value => User::role($rolesEnum->value)->count(),
+        ])->toArray();
     }
 
     private function getRecentUsers(int $days): int {
@@ -62,7 +62,7 @@ class DashboardService {
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get()
-            ->map(function ($user) {
+            ->map(function ($user): array {
                 $role = $user->roles->first();
 
                 return [

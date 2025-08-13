@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\VehiclePrices;
 
 use App\Exceptions\VehiclePrices\APIRequestException;
@@ -11,15 +13,15 @@ use Illuminate\Support\Facades\Log;
 class VehiclePricesService {
     private const CACHE_KEY = 'vehicle_prices_access_token';
 
-    private string $clientId;
+    private readonly string $clientId;
 
-    private string $clientSecret;
+    private readonly string $clientSecret;
 
-    private string $tokenUrl;
+    private readonly string $tokenUrl;
 
-    private int $timeout;
+    private readonly int $timeout;
 
-    private int $cacheTtl;
+    private readonly int $cacheTtl;
 
     /**
      * @return void
@@ -137,7 +139,7 @@ class VehiclePricesService {
     public function makeAuthenticatedRequest(string $url, array $data = [], string $method = 'POST'): array {
         $maxRetries = 1; // Only retry once for token expiration
 
-        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+        for ($attempt = 0; $attempt <= $maxRetries; ++$attempt) {
             try {
                 $accessToken = $this->getAccessToken();
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\VehiclePrices;
 
 use App\Exceptions\VehiclePrices\APIRequestException;
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class VehicleAPIController extends Controller {
     public function __construct(
-        private VehiclePricesService $vehiclePricesService
+        private readonly VehiclePricesService $vehiclePricesService
     ) {}
 
     public function fetchPrices(Request $request): JsonResponse {
@@ -21,14 +23,14 @@ class VehicleAPIController extends Controller {
             'data' => 'required|json',
         ]);
 
-        $inputData = json_decode($validated['data'], true);
+        $inputData = json_decode((string) $validated['data'], true);
 
         // Validate the required fields in the analyzed data
         $requiredFields = ['location_id', 'location_level', 'steer_from', 'steer_to'];
-        foreach ($requiredFields as $field) {
-            if (! isset($inputData[$field])) {
+        foreach ($requiredFields as $requiredField) {
+            if (! isset($inputData[$requiredField])) {
                 return response()->json([
-                    'error' => "Missing required field: {$field}",
+                    'error' => 'Missing required field: ' . $requiredField,
                 ], 400);
             }
         }
@@ -72,7 +74,7 @@ class VehicleAPIController extends Controller {
             'data' => 'required|json',
         ]);
 
-        $inputData = json_decode($validated['data'], true);
+        $inputData = json_decode((string) $validated['data'], true);
 
         Log::info('Publish Prices Input Data: ' . json_encode($inputData));
 

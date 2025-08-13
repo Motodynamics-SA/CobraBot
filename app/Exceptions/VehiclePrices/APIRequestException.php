@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exceptions\VehiclePrices;
 
 class APIRequestException extends VehiclePricesAPIException {
@@ -9,11 +11,11 @@ class APIRequestException extends VehiclePricesAPIException {
     public function __construct(
         string $message = 'API request failed',
         int $code = 0,
-        ?\Exception $previous = null,
+        ?\Exception $exception = null,
         ?array $context = null,
-        private int $httpStatus = 0
+        private readonly int $httpStatus = 0
     ) {
-        parent::__construct($message, $code, $previous, $context);
+        parent::__construct($message, $code, $exception, $context);
     }
 
     public function getHttpStatus(): int {

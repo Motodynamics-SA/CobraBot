@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Enums\RolesEnum;
@@ -39,9 +41,7 @@ class AppServiceProvider extends ServiceProvider {
         // Implicitly grant "Super Admin" role all permissions
         // This works in the app by using gate-related functions like auth()->user->can() and @can()
         // NOSONAR
-        Gate::before(function ($user, $ability) {
-            return $user->hasRole(RolesEnum::ADMINISTRATOR) ? true : null;
-        });
+        Gate::before(fn ($user, $ability): ?true => $user->hasRole(RolesEnum::ADMINISTRATOR) ? true : null);
 
         // Uncomment the following line to enable strict mode for Eloquent models
         /**
@@ -89,13 +89,11 @@ class AppServiceProvider extends ServiceProvider {
          */
         Date::use(CarbonImmutable::class);
 
-        Event::listen(function (SocialiteWasCalled $event): void {
-            $event->extendSocialite('microsoft', Provider::class);
+        Event::listen(function (SocialiteWasCalled $socialiteWasCalled): void {
+            $socialiteWasCalled->extendSocialite('microsoft', Provider::class);
         });
 
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
     }
 
     protected function configureSecureUrls(): void {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
@@ -26,11 +28,11 @@ class ProfileController extends Controller {
     /**
      * Update the user's profile settings.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse {
+    public function update(ProfileUpdateRequest $profileUpdateRequest): RedirectResponse {
         /** @var User $user */
-        $user = $request->user();
+        $user = $profileUpdateRequest->user();
 
-        $user->fill($request->validated());
+        $user->fill($profileUpdateRequest->validated());
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;

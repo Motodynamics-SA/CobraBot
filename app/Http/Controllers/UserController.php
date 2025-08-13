@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserStoreRequest;
@@ -53,10 +55,10 @@ class UserController extends Controller {
     /**
      * Store a newly created user.
      */
-    public function store(UserStoreRequest $request): RedirectResponse {
+    public function store(UserStoreRequest $userStoreRequest): RedirectResponse {
         $this->authorize('create', User::class);
 
-        $this->userService->create($request->validated());
+        $this->userService->create($userStoreRequest->validated());
 
         return redirect()
             ->route('users.index')
@@ -89,10 +91,10 @@ class UserController extends Controller {
     /**
      * Update the specified user.
      */
-    public function update(UserUpdateRequest $request, User $user): RedirectResponse {
+    public function update(UserUpdateRequest $userUpdateRequest, User $user): RedirectResponse {
         $this->authorize('update', $user);
 
-        $this->userService->update($user, $request->validated());
+        $this->userService->update($user, $userUpdateRequest->validated());
 
         return redirect()
             ->route('users.index')

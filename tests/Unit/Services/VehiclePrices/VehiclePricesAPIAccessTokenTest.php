@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Services\VehiclePrices;
 
 use App\Exceptions\VehiclePrices\APIRequestException;
@@ -9,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-class VehiclePricesAPIAccessTokenTest extends TestCase {
+final class VehiclePricesAPIAccessTokenTest extends TestCase {
     private VehiclePricesService $vehiclePricesService;
 
     protected function setUp(): void {
@@ -30,7 +32,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->vehiclePricesService = new VehiclePricesService;
     }
 
-    public function test_get_access_token_fetches_new_token_when_cache_empty() {
+    public function test_get_access_token_fetches_new_token_when_cache_empty(): void {
         // Mock the HTTP response
         Http::fake([
             'identity-stage.goorange.sixt.com/*' => Http::response([
@@ -50,7 +52,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->assertEquals('test_token_123', Cache::get('vehicle_prices_access_token'));
     }
 
-    public function test_get_access_token_returns_cached_token_when_available() {
+    public function test_get_access_token_returns_cached_token_when_available(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'cached_token_456', 3500);
 
@@ -64,7 +66,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         Http::assertNothingSent();
     }
 
-    public function test_clear_cached_token_removes_token_from_cache() {
+    public function test_clear_cached_token_removes_token_from_cache(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
@@ -75,7 +77,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->assertNull(Cache::get('vehicle_prices_access_token'));
     }
 
-    public function test_make_authenticated_request_uses_cached_token() {
+    public function test_make_authenticated_request_uses_cached_token(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'cached_token', 3500);
 
@@ -91,13 +93,11 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->assertEquals(['prices' => [100, 200, 300]], $response);
 
         // Verify request was made with cached token
-        Http::assertSent(function ($request) {
-            return $request->url() === 'https://api.example.com/prices' &&
-                   $request->header('Authorization')[0] === 'Bearer cached_token';
-        });
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.example.com/prices' &&
+               $request->header('Authorization')[0] === 'Bearer cached_token');
     }
 
-    public function test_make_authenticated_request_refreshes_token_on_401() {
+    public function test_make_authenticated_request_refreshes_token_on_401(): void {
         // Set an expired cached token
         Cache::put('vehicle_prices_access_token', 'expired_token', 3500);
 
@@ -122,7 +122,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->assertEquals('new_token_789', Cache::get('vehicle_prices_access_token'));
     }
 
-    public function test_make_authenticated_request_throws_exception_immediately_for_non_401_errors() {
+    public function test_make_authenticated_request_throws_exception_immediately_for_non_401_errors(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
@@ -138,7 +138,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
     }
 
-    public function test_make_authenticated_request_throws_exception_after_token_refresh_retry() {
+    public function test_make_authenticated_request_throws_exception_after_token_refresh_retry(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
@@ -158,7 +158,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->vehiclePricesService->makeAuthenticatedRequest('https://api.example.com/prices', ['test' => 'data']);
     }
 
-    public function test_get_access_token_throws_exception_when_token_fetch_fails() {
+    public function test_get_access_token_throws_exception_when_token_fetch_fails(): void {
         // Mock the HTTP response to return an error
         Http::fake([
             'identity-stage.goorange.sixt.com/*' => Http::response(['error' => 'Invalid credentials'], 401),
@@ -174,7 +174,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->vehiclePricesService->getAccessToken();
     }
 
-    public function test_get_access_token_throws_exception_when_no_token_in_response() {
+    public function test_get_access_token_throws_exception_when_no_token_in_response(): void {
         // Mock the HTTP response to return success but no token
         Http::fake([
             'identity-stage.goorange.sixt.com/*' => Http::response(['expires_in' => 3600], 200),
@@ -190,7 +190,7 @@ class VehiclePricesAPIAccessTokenTest extends TestCase {
         $this->vehiclePricesService->getAccessToken();
     }
 
-    public function test_make_authenticated_request_only_retries_on_401_errors() {
+    public function test_make_authenticated_request_only_retries_on_401_errors(): void {
         // Set a cached token
         Cache::put('vehicle_prices_access_token', 'test_token', 3500);
 
