@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'title' => 'Χρήστες Backoffice',
     'index_page_title' => 'Όλοι οι Χρήστες',

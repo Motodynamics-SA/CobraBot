@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../../scss/price-updater/steering-data-table.scss';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface SteeringRecord {
 	id: string;
@@ -27,8 +28,15 @@ export interface SteeringRecord {
 // Helper function to format date for display
 const formatDate = (dateStr: string): string => {
 	if (!dateStr) return '-';
-	const date = new Date(dateStr);
-	return date.toLocaleDateString('en-GB', {
+
+	// Parse the date string more explicitly to avoid timezone issues
+	const [datePart] = dateStr.split(' ');
+	const [year, month, day] = datePart.split('-').map(Number);
+
+	// Create date using local time to avoid timezone conversion issues
+	const date = new Date(year, month - 1, day);
+
+	return date.toLocaleDateString('el-GR', {
 		day: '2-digit',
 		month: '2-digit',
 		year: 'numeric',
@@ -38,8 +46,16 @@ const formatDate = (dateStr: string): string => {
 // Helper function to format datetime for display
 const formatDateTime = (dateStr: string): string => {
 	if (!dateStr) return '-';
-	const date = new Date(dateStr);
-	return date.toLocaleDateString('en-GB', {
+
+	// Parse the date string more explicitly to avoid timezone issues
+	const [datePart, timePart] = dateStr.split(' ');
+	const [year, month, day] = datePart.split('-').map(Number);
+	const [hour, minute] = (timePart || '00:00').split(':').map(Number);
+
+	// Create date using local time to avoid timezone conversion issues
+	const date = new Date(year, month - 1, day, hour, minute);
+
+	return date.toLocaleDateString('el-GR', {
 		day: '2-digit',
 		month: '2-digit',
 		year: 'numeric',
@@ -48,10 +64,30 @@ const formatDateTime = (dateStr: string): string => {
 	});
 };
 
-const SteeringDataTable: React.FC<{ steerings: SteeringRecord[]; id: string }> = ({
+interface SteeringDataTableProps {
+	steerings: SteeringRecord[];
+	id: string;
+	selectedRows?: Set<string>;
+	onRowSelect?: (rowId: string) => void;
+	onSelectAll?: () => void;
+	showSelectionControls?: boolean;
+}
+
+const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 	steerings,
 	id,
+	selectedRows = new Set(),
+	onRowSelect,
+	showSelectionControls = false,
 }) => {
+	const handleRowClick = (rowId: string) => {
+		if (onRowSelect) {
+			onRowSelect(rowId);
+		}
+	};
+
+	const isRowSelected = (rowId: string) => selectedRows.has(rowId);
+
 	return (
 		<div className="overflow-x-auto">
 			<table
@@ -59,6 +95,7 @@ const SteeringDataTable: React.FC<{ steerings: SteeringRecord[]; id: string }> =
 				className="steering-table min-w-full divide-y divide-gray-200 border border-gray-200"
 			>
 				<colgroup>
+					{showSelectionControls && <col className="selection-column" />}
 					<col className="table-col-1" />
 					<col className="table-col-2" />
 					<col className="table-col-3" />
@@ -164,55 +201,83 @@ const SteeringDataTable: React.FC<{ steerings: SteeringRecord[]; id: string }> =
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-gray-200 bg-white">
-					{steerings.map((steering, index) => (
-						<tr
-							key={id + '_' + (steering.id || index)}
-							className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-						>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{steering.id}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{formatDate(steering.steer_from)}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{steering.location_level}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{steering.steer_type}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{steering.available_type}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{steering.vehicle_group}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-center text-sm text-gray-900">
-								{steering.value}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-center text-sm text-gray-900">
-								{steering.length_of_rent_from}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-center text-sm text-gray-900">
-								{steering.length_of_rent_to}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{formatDateTime(steering.steer_from)}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{formatDateTime(steering.steer_to)}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{formatDateTime(steering.created_at)}
-							</td>
-							<td className="border-r border-gray-200 px-3 py-2 text-sm text-gray-900">
-								{formatDateTime(steering.created_at)}
-							</td>
-							<td className="px-3 py-2 text-sm text-gray-900">
-								{steering.remark || '-'}
-							</td>
-						</tr>
-					))}
+					{steerings.map((steering, index) => {
+						const rowId = id + '_' + (steering.id || index);
+						const isSelected = isRowSelected(rowId);
+
+						return (
+							<tr
+								key={rowId}
+								className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${
+									isSelected ? 'selected' : 'cursor-pointer'
+								}`}
+								onClick={() => handleRowClick(rowId)}
+							>
+								{showSelectionControls && (
+									<td className="selection-column border-r border-gray-200 px-3 py-2 text-sm">
+										{isSelected && <span className="text-white">✓</span>}
+									</td>
+								)}
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{steering.id}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{formatDate(steering.steer_from)}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{steering.location_level}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{steering.steer_type}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{steering.available_type}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{steering.vehicle_group}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-center text-sm">
+									{steering.value}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-center text-sm">
+									{steering.length_of_rent_from}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-center text-sm">
+									{steering.length_of_rent_to}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{formatDateTime(steering.steer_from)}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{formatDateTime(steering.steer_to)}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{formatDateTime(steering.created_at)}
+								</td>
+								<td className="border-r border-gray-200 px-3 py-2 text-sm">
+									{formatDateTime(steering.created_at)}
+								</td>
+								<td className="px-3 py-2 text-sm">
+									{steering.remark ? (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<span className="block cursor-help truncate">
+													{steering.remark}
+												</span>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p className="max-w-xs break-words">
+													{steering.remark}
+												</p>
+											</TooltipContent>
+										</Tooltip>
+									) : (
+										'-'
+									)}
+								</td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>

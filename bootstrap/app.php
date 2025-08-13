@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Auth\AuthenticationException;
@@ -22,8 +24,8 @@ if (getenv('APP_ENV') !== 'testing') {
     $developmentEnv = Env::get('APP_DEVELOPMENT_ENV');
 
     if ($developmentEnv && (Env::get('APP_ENV') === 'local')) {
-        $additionalEnvFile = ".env.{$developmentEnv}";
-        $additionalEnvPath = dirname(__DIR__) . "/{$additionalEnvFile}";
+        $additionalEnvFile = '.env.' . $developmentEnv;
+        $additionalEnvPath = dirname(__DIR__) . ('/' . $additionalEnvFile);
 
         if (file_exists($additionalEnvPath)) {
             $dotenv = Dotenv\Dotenv::createMutable(dirname(__DIR__), $additionalEnvFile);
@@ -36,8 +38,8 @@ if (getenv('APP_ENV') !== 'testing') {
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
-        commands: __DIR__ . '/../routes/console.php',
         api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -47,6 +49,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Web middleware
         $middleware->web(append: [
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -73,32 +76,33 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+        $exceptions->render(function (NotFoundHttpException $notFoundHttpException, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
                     'error' => 'Resource not found',
                 ], 404);
             }
+
             // Don't return anything to let Laravel handle it
         });
 
-        $exceptions->render(function (AuthenticationException $e, $request) {
-            if ($request->is('api/*')) {
-                if ($request->expectsJson()) {
-                    return response()->json(['error' => 'Unauthenticated.'], 401);
-                }
+        $exceptions->render(function (AuthenticationException $authenticationException, $request) {
+            if ($request->is('api/*') && $request->expectsJson()) {
+                return response()->json(['error' => 'Unauthenticated.'], 401);
             }
+
             // Don't return anything to let Laravel handle it
         });
 
-        $exceptions->render(function (\Exception $e, Request $request) {
+        $exceptions->render(function (\Exception $exception, Request $request) {
             if ($request->is('api/*')) {
-                $status = $e->getCode() ?: 500;
+                $status = $exception->getCode() ?: 500;
 
                 return response()->json([
-                    'error' => $e->getMessage() ?: 'Server Error',
+                    'error' => in_array($exception->getMessage(), ['', '0'], true) ? 'Server Error' : $exception->getMessage(),
                 ], $status >= 400 && $status < 600 ? $status : 500);
             }
+
             // Don't return anything to let Laravel handle it
         });
     })

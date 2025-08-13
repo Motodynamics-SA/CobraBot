@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Auth;
 
 use GrantHolle\Altcha\Rules\ValidAltcha;
@@ -80,6 +82,6 @@ class LoginRequest extends FormRequest {
      * Get the rate limiting throttle key for the request.
      */
     public function throttleKey(): string {
-        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
+        return Str::transliterate(Str::lower($this->string('email')->toString()) . '|' . $this->ip());
     }
 }

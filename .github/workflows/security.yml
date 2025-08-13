@@ -1,0 +1,132 @@
+name: Security Scan
+
+on:
+    push:
+        branches:
+            - main
+            - develop
+    pull_request:
+        branches:
+            - main
+            - develop
+    schedule:
+        # Run every day at 2 AM UTC
+        - cron: '0 2 * * *'
+
+jobs:
+    gitleaks:
+        name: Gitleaks Secret Scan
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+              with:
+                  # Fetch full history for comprehensive scan
+                  fetch-depth: 0
+
+            - name: Download and Run Gitleaks
+              run: |
+                  # Download Gitleaks binary
+                  curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz
+
+                  # Run Gitleaks scan
+                  echo "🔍 Running Gitleaks secret scan..."
+                  ./gitleaks detect --config=.gitleaks.toml --verbose || exit_code=$?
+
+                  # Check results
+                  if [ "${exit_code:-0}" -eq 1 ]; then
+                      echo "❌ Gitleaks found potential secrets in the repository!"
+                      echo "Please review the findings above and remove any secrets before merging."
+                      exit 1
+                  fi
+
+                  echo "✅ No secrets detected by Gitleaks - repository is clean!"
+
+    dependency-scan:
+        name: Dependency Security Scan
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  tools: composer:v2
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+
+            - name: Copy Environment File
+              run: cp .env.testing .env
+
+            - name: Install PHP Dependencies
+              run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+            - name: Install Node Dependencies
+              run: npm ci --production
+
+            - name: Run PHP Security Audit
+              run: composer audit --format=table
+
+            - name: Run Node Security Audit
+              run: npm audit --audit-level=moderate
+
+    code-quality:
+        name: Code Quality & Static Analysis
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  tools: composer:v2
+
+            - name: Copy Environment File
+              run: cp .env.testing .env
+
+            - name: Install Dependencies
+              run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            - name: Run PHPStan
+              run: ./vendor/bin/phpstan analyse --memory-limit=2G
+
+            - name: Run PHP Code Style Check
+              run: ./vendor/bin/pint --test
+
+    security-headers:
+        name: Security Headers Check
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request'
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Check Security Headers Middleware
+              run: |
+                  if [ -f "app/Http/Middleware/AddSecurityHeaders.php" ]; then
+                    echo "✅ Security headers middleware found"
+                    grep -q "X-Frame-Options\|X-Content-Type-Options\|X-XSS-Protection\|Strict-Transport-Security" app/Http/Middleware/AddSecurityHeaders.php && echo "✅ Basic security headers are configured" || echo "❌ Missing basic security headers"
+                  else
+                    echo "❌ Security headers middleware not found"
+                    exit 1
+                  fi
+
+            - name: Check HTTPS Configuration
+              run: |
+                  if grep -q "HTTPS\|SSL" config/app.php || grep -q "secure" config/session.php; then
+                    echo "✅ HTTPS configuration found"
+                  else
+                    echo "⚠️  Consider configuring HTTPS for production"
+                  fi

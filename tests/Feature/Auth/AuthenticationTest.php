@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enums\RolesEnum;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +36,7 @@ test('users can authenticate using the login screen', function (): void {
 
     $this->assertAuthenticated();
     $response->assertStatus(302);
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('price-updater.data-entry.index'));
     // assert the user is logged in
     $this->assertAuthenticated();
 });

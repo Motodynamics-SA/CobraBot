@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Enums\PermissionsEnum;
@@ -41,8 +43,8 @@ class HandleInertiaRequests extends Middleware {
             ...parent::share($request),
             'appName' => config('app.name'),
             'locale' => app()->getLocale(),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
-            'translations' => fn () => [
+            'quote' => ['message' => trim($message ?? ''), 'author' => trim($author ?? '')],
+            'translations' => fn (): array => [
                 'auth' => trans('auth'),
                 'pagination' => trans('pagination'),
                 'passwords' => trans('passwords'),
@@ -65,9 +67,9 @@ class HandleInertiaRequests extends Middleware {
                     'updated_at' => $request->user()->updated_at,
                     'deleted_at' => $request->user()->deleted_at,
                     'can' => collect(PermissionsEnum::cases())
-                        ->mapWithKeys(fn (PermissionsEnum $permission) => [
-                            str_replace(' ', '_', $permission->value) => $request->user()->can($permission->value),
-                            str_replace('-', '_', $permission->value) => $request->user()->can($permission->value),
+                        ->mapWithKeys(fn (PermissionsEnum $permissionsEnum) => [
+                            str_replace(' ', '_', $permissionsEnum->value) => $request->user()->can($permissionsEnum->value),
+                            str_replace('-', '_', $permissionsEnum->value) => $request->user()->can($permissionsEnum->value),
                         ])
                         ->all(),
                 ] : null,
@@ -82,6 +84,7 @@ class HandleInertiaRequests extends Middleware {
                 'warning' => session('warning'),
                 'info' => session('info'),
             ],
+            'csrf_token' => csrf_token(),
         ];
     }
 }

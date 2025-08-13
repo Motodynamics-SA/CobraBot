@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\RestrictApiAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -17,7 +19,7 @@ test('allows access for allowed origin header', function (): void {
     ]);
 
     $middleware = new \App\Http\Middleware\RestrictApiAccess;
-    $next = fn ($request) => new Response('OK');
+    $next = fn ($request): \Symfony\Component\HttpFoundation\Response => new Response('OK');
 
     // Act
     $response = $middleware->handle($request, $next);
@@ -34,9 +36,7 @@ test('denies access for unauthorized IP', function (): void {
     $request->server->set('REMOTE_ADDR', '10.0.0.1');
 
     $middleware = new RestrictApiAccess;
-    $next = function ($request) {
-        return new Response('OK');
-    };
+    $next = (fn ($request): \Symfony\Component\HttpFoundation\Response => new Response('OK'));
 
     // Act
     $response = $middleware->handle($request, $next);
@@ -55,9 +55,7 @@ test('handles empty allowed IPs config', function (): void {
     $request->server->set('REMOTE_ADDR', '127.0.0.1');
 
     $middleware = new RestrictApiAccess;
-    $next = function ($request) {
-        return new Response('OK');
-    };
+    $next = (fn ($request): \Symfony\Component\HttpFoundation\Response => new Response('OK'));
 
     // Act
     $response = $middleware->handle($request, $next);

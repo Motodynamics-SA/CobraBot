@@ -1,70 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { AppHeader } from '@/components/app-header';
 import { router, Head } from '@inertiajs/react';
-import SteeringDataTable, { SteeringRecord } from '@/components/price-updater/steering-data-table';
+import SteeringDataTable from '@/components/price-updater/steering-data-table';
+import {
+	VehiclePricesService,
+	ParsedData,
+	PublishResponse,
+	SteeringRecord,
+} from '@/services/VehiclePricesService';
 
 interface PricesPageProps {
 	entryData: string;
-}
-
-interface DataItem {
-	name: string;
-	start: string;
-	end: string;
-	yield: string;
-	yield_s: string;
-	price: string;
-	Lor: number;
-	Mlor: number;
-	peaks: Array<{
-		start: string;
-		end: string;
-		yield: string;
-		yield_s: string;
-		price: string;
-		Lor: number;
-		Mlor: number;
-	}>;
-}
-
-interface ParsedData {
-	date: string;
-	location: string;
-	data: DataItem[];
-}
-
-interface ApiResponse {
-	prices?: {
-		steerings?: SteeringRecord[];
-		[key: string]: unknown;
-	};
-	error?: string;
-}
-
-interface PublishResponse {
-	message?: string;
-	response?: unknown;
-	error?: string;
-}
-
-interface PublishRecord {
-	location_level: string;
-	location_id: string;
-	steer_type: string;
-	length_of_rent_from: number;
-	length_of_rent_to: number;
-	vehicle_type: string;
-	vehicle_group: string;
-	yield_type: string;
-	value_type: string;
-	value: number;
-	steer_from: string;
-	steer_to: string;
-	identity: string;
-	channel: string;
-	available_type: string;
-	remark: string;
-	operation: string;
 }
 
 const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
@@ -72,181 +18,163 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [publishing, setPublishing] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const [publishResult, setPublishResult] = useState<PublishResponse | null>(null);
+	const [deleteResult, setDeleteResult] = useState<PublishResponse | null>(null);
+	const [processedRowsCount, setProcessedRowsCount] = useState<number | null>(null);
+	const [refreshingData, setRefreshingData] = useState(false);
+	const [selectedCurrentRows, setSelectedCurrentRows] = useState<Set<string>>(new Set());
 
-	// Function to parse date from DD/MM/YYYY format to YYYY-MM-DD
-	const parseDate = (dateStr: string): string => {
-		const [day, month, year] = dateStr.split('/');
-		return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+	// Function to handle row selection for current steering records
+	const handleCurrentRowSelect = (rowId: string) => {
+		setSelectedCurrentRows((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(rowId)) {
+				newSet.delete(rowId);
+			} else {
+				newSet.add(rowId);
+			}
+			return newSet;
+		});
 	};
 
-	// Function to analyze data and extract location and date range
-	const analyzeData = React.useCallback((data: ParsedData) => {
-		const location = data.location;
+	// Function to select all current steering records
+	const handleSelectAllCurrent = () => {
+		const allRowIds = steeringRecords.map(
+			(_, index) => `current-steering-records_${_.id || index}`
+		);
+		setSelectedCurrentRows(new Set(allRowIds));
+	};
 
-		// Collect all dates from main data and peaks
-		const allDates: string[] = [];
+	// Function to clear all selections
+	const handleClearSelections = () => {
+		setSelectedCurrentRows(new Set());
+	};
 
-		// Add dates from main data items
-		data.data.forEach((item) => {
-			allDates.push(item.start);
-			allDates.push(item.end);
+	// Function to handle delete selected records
+	const handleDeleteSelected = async () => {
+		setDeleting(true);
+		setDeleteResult(null);
+		setPublishResult(null);
+		setError(null);
+		setProcessedRowsCount(null);
 
-			// Add dates from peaks
-			item.peaks.forEach((peak) => {
-				allDates.push(peak.start);
-				allDates.push(peak.end);
-			});
-		});
+		try {
+			// Get the selected steering records
+			const selectedRecords = steeringRecords.filter((_, index) =>
+				selectedCurrentRows.has(`current-steering-records_${_.id || index}`)
+			);
 
-		// Parse all dates and find min/max
-		const parsedDates = allDates.map((date) => new Date(parseDate(date)));
-		const minDate = new Date(Math.min(...parsedDates.map((d) => d.getTime())));
-		const maxDate = new Date(Math.max(...parsedDates.map((d) => d.getTime())));
+			const {
+				result,
+				error: deleteError,
+				processedRowsCount: count,
+			} = await VehiclePricesService.deletePrices(selectedRecords);
 
-		// Format dates for API (YYYY-MM-DD HH:mm)
-		const steerFrom = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')} 00:00`;
-		const steerTo = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')} 23:59`;
+			if (deleteError) {
+				setError(deleteError);
+			} else {
+				setDeleteResult(result);
+				setProcessedRowsCount(count);
+				setSelectedCurrentRows(new Set()); // Clear selections after successful deletetion
 
-		return {
-			location_id: location,
-			location_level: 'LOCATION_LEVEL_BRANCH',
-			steer_from: steerFrom,
-			steer_to: steerTo,
-			limit: 1000,
-			offset: 0,
-		};
-	}, []);
+				// Show the refreshing indicator immediately
+				setRefreshingData(true);
 
-	// Function to convert entry data to publish format
-	const convertToPublishFormat = (parsedData: ParsedData): PublishRecord[] => {
-		const records: PublishRecord[] = [];
+				// Wait 3 seconds while showing the loader
+				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-		parsedData.data.forEach((item) => {
-			// Main period
-			records.push({
-				location_level: 'LOCATION_LEVEL_BRANCH',
-				location_id: parsedData.location,
-				steer_type: 'STEER_TYPE_UDA',
-				length_of_rent_from: 1,
-				length_of_rent_to: 1,
-				vehicle_type: 'VEHICLE_TYPE_P',
-				vehicle_group: item.name,
-				yield_type: 'TYPE_LEVEL_PLAIN',
-				value_type: 'VALUE_TYPE_RATE_P',
-				value: parseFloat(item.yield) || 0,
-				steer_from: parseDate(item.start) + ' 00:00',
-				steer_to: parseDate(item.end) + ' 23:59',
-				identity: 'franchise',
-				channel: 'GIVO',
-				available_type: 'AVAILABLE_TYPE_CONDITIONAL',
-				remark: `Steering ${item.name}`,
-				operation: 'UPSERT_WITHOUT_SPLIT',
-			});
+				// Automatically refresh the data after successful deletion
+				await fetchPricesData(true);
+			}
+		} catch (error) {
+			setError('Failed to delete steering records');
+			console.error('Delete error:', error);
+		} finally {
+			setDeleting(false);
+		}
+	};
 
-			// Peaks
-			item.peaks.forEach((peak) => {
-				records.push({
-					location_level: 'LOCATION_LEVEL_BRANCH',
-					location_id: parsedData.location,
-					steer_type: 'STEER_TYPE_PEAK',
-					length_of_rent_from: 1,
-					length_of_rent_to: 1,
-					vehicle_type: 'VEHICLE_TYPE_P',
-					vehicle_group: item.name,
-					yield_type: 'TYPE_LEVEL_PLAIN',
-					value_type: 'VALUE_TYPE_RATE_P',
-					value: parseFloat(peak.yield) || 0,
-					steer_from: parseDate(peak.start) + ' 00:00',
-					steer_to: parseDate(peak.end) + ' 23:59',
-					identity: 'franchise',
-					channel: 'GIVO',
-					available_type: 'AVAILABLE_TYPE_CONDITIONAL',
-					remark: `Peak ${item.name}`,
-					operation: 'UPSERT_WITHOUT_SPLIT',
-				});
-			});
-		});
+	// Unified function to fetch prices data
+	const fetchPricesData = useCallback(
+		async (isRefreshing = false) => {
+			console.log('fetchPricesData', isRefreshing);
+			if (isRefreshing) {
+				setRefreshingData(true);
+			} else {
+				setLoading(true);
+			}
+			setError(null);
 
-		return records;
+			try {
+				const result = await VehiclePricesService.fetchPrices(entryData);
+				console.log('result', result);
+
+				if (result.error) {
+					setError(result.error);
+				} else {
+					setPrices(result.prices);
+				}
+			} catch (error) {
+				setError('Failed to fetch prices');
+				console.error('Fetch error:', error);
+			} finally {
+				if (isRefreshing) {
+					setRefreshingData(false);
+				} else {
+					setLoading(false);
+				}
+			}
+		},
+		[entryData]
+	);
+
+	// Function to refresh prices data
+	const refreshPrices = async () => {
+		await fetchPricesData(true);
 	};
 
 	// Function to publish steering records
 	const handlePublish = async () => {
 		setPublishing(true);
 		setPublishResult(null);
+		setDeleteResult(null);
 		setError(null);
+		setProcessedRowsCount(null);
 
 		try {
-			const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
-			const publishRecords = convertToPublishFormat(parsedData);
+			const {
+				result,
+				error: publishError,
+				processedRowsCount: count,
+			} = await VehiclePricesService.publishPrices(entryData);
 
-			const response = await fetch('/price-updater/publish-prices', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN':
-						(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-							?.content || '',
-				},
-				body: JSON.stringify({ data: JSON.stringify(publishRecords) }),
-			});
-
-			const result: PublishResponse = (await response.json()) as PublishResponse;
-
-			if (!response.ok) {
-				setError(result.error || 'Failed to publish prices');
+			if (publishError) {
+				setError(publishError);
 			} else {
 				setPublishResult(result);
+				setProcessedRowsCount(count);
+
+				// Show the refreshing indicator immediately
+				setRefreshingData(true);
+
+				// Wait 3 seconds while showing the loader
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
+				// Automatically refresh the data after successful publishing
+				await fetchPricesData(true);
 			}
-		} catch (publishError) {
+		} catch (error) {
 			setError('Failed to publish steering records');
-			console.error('Publish error:', publishError);
+			console.error('Publish error:', error);
 		} finally {
 			setPublishing(false);
 		}
 	};
 
 	useEffect(() => {
-		async function fetchPrices() {
-			setLoading(true);
-			setError(null);
-			setPrices(null);
-
-			try {
-				// Parse the entry data
-				const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
-
-				// Analyze the data to extract location and date range
-				const apiPayload = analyzeData(parsedData);
-
-				const response = await fetch('/price-updater/fetch-prices', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-CSRF-TOKEN':
-							(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-								?.content || '',
-					},
-					body: JSON.stringify({ data: JSON.stringify(apiPayload) }),
-				});
-
-				const result: ApiResponse = (await response.json()) as ApiResponse;
-				if (!response.ok) {
-					setError(result.error || 'Failed to fetch prices');
-				} else {
-					setPrices(result.prices || null);
-				}
-			} catch (parseError) {
-				setError('Failed to parse entry data');
-				console.error('Parse error:', parseError);
-			} finally {
-				setLoading(false);
-			}
-		}
-
-		void fetchPrices();
-	}, [entryData, analyzeData]);
+		void fetchPricesData(false);
+	}, [entryData, fetchPricesData]);
 
 	// Extract steering records from prices data
 	const steeringRecords =
@@ -254,70 +182,15 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 			? (prices.steerings as SteeringRecord[])
 			: [];
 
-	// Helper to map entryData to SteeringRecord[]
-	const mapEntryDataToSteeringRecords = (parsedData: ParsedData): SteeringRecord[] => {
-		const baseFields = {
-			location_id: parsedData.location,
-			location_level: 'LOCATION_LEVEL_POOL',
-			channel: '-',
-			direction: '-',
-			rate_plan: '-',
-			rate_code: '-',
-			available_type: '-',
-			point_of_sale_location: '-',
-			stable: false,
-			identity: '-',
-			remark: '-',
-			created_at: '',
-		};
-
-		const records: SteeringRecord[] = [];
-
-		parsedData.data.forEach((item) => {
-			// Main period
-			records.push({
-				id: '',
-				steer_type: 'STEER_TYPE_UDA',
-				steer_from: item.start,
-				steer_to: item.end,
-				length_of_rent_from: 1,
-				length_of_rent_to: 1,
-				vehicle_group: item.name,
-				value: item.yield || '-',
-				...baseFields,
-			});
-			// Peaks
-			item.peaks.forEach((peak) => {
-				records.push({
-					id: '',
-					steer_type: 'STEER_TYPE_PEAK',
-					steer_from: peak.start,
-					steer_to: peak.end,
-					length_of_rent_from: 1,
-					length_of_rent_to: 1,
-					vehicle_group: item.name,
-					value: peak.yield || '-',
-					...baseFields,
-				});
-			});
-		});
-		return records;
-	};
-
-	// Extract steering records from entryData
-	let entryDataRecords: SteeringRecord[] = [];
-	try {
-		const parsedEntryData: ParsedData = JSON.parse(entryData) as ParsedData;
-		entryDataRecords = mapEntryDataToSteeringRecords(parsedEntryData);
-	} catch (error) {
-		console.error('Failed to parse entry data', error);
-	}
+	// Extract steering records from entryData using the service
+	const { records: entryDataRecords } =
+		VehiclePricesService.parseEntryDataToSteeringRecords(entryData);
 
 	return (
 		<div className="min-h-screen bg-gray-50">
 			<Head title="Fetched Prices" />
 			<AppHeader />
-			<div className="max-w-3/4 sm:max-w-9/10 md:max-w-3/4 lg:max-w-3/4 mx-auto mt-10 w-full">
+			<div className="max-w-11/12 sm:max-w-11/12 md:max-w-11/12 lg:max-w-11/12 mx-auto mt-10 w-full">
 				<div className="mb-4">
 					<button
 						onClick={() => router.visit('/price-updater/data-entry')}
@@ -357,19 +230,48 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 							return <h1 className="mb-6 text-2xl font-bold">Fetched Prices</h1>;
 						}
 					})()}
-					{loading && <div>Loading...</div>}
+					{loading && (
+						<div className="flex items-center gap-2">
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+							<span>Loading initial data...</span>
+						</div>
+					)}
 					{error && <div className="mb-5 text-red-600">{error}</div>}
+					{deleteResult && (
+						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
+							<h3 className="font-semibold">Success!</h3>
+							<p>{String(deleteResult.message || 'Records deleted successfully')}</p>
+							{processedRowsCount !== null && (
+								<p className="mt-2 text-sm">
+									<strong>{processedRowsCount}</strong> steering records were
+									deleted by the external API.
+								</p>
+							)}
+							{refreshingData && (
+								<div className="mt-3 flex items-center gap-2 text-base font-medium">
+									<div className="h-5 w-5 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
+									<span>Refreshing data...</span>
+								</div>
+							)}
+						</div>
+					)}
 					{publishResult && (
 						<div className="mb-5 rounded bg-green-50 p-4 text-green-800">
 							<h3 className="font-semibold">Success!</h3>
-							<p>{String(publishResult.message || 'Prices published successfully')}</p>
-							{publishResult.response && (
-								<details className="mt-2">
-									<summary className="cursor-pointer text-sm">View Response Details</summary>
-									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded border bg-green-100 p-2 text-xs">
-										{JSON.stringify(publishResult.response as Record<string, unknown>, null, 2)}
-									</pre>
-								</details>
+							<p>
+								{String(publishResult.message || 'Prices published successfully')}
+							</p>
+							{processedRowsCount !== null && (
+								<p className="mt-2 text-sm">
+									<strong>{processedRowsCount}</strong> steering records were
+									processed by the external API.
+								</p>
+							)}
+							{refreshingData && (
+								<div className="mt-3 flex items-center gap-2 text-base font-medium">
+									<div className="h-5 w-5 animate-spin rounded-full border-2 border-green-600 border-t-transparent"></div>
+									<span>Refreshing data...</span>
+								</div>
 							)}
 						</div>
 					)}
@@ -377,36 +279,132 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 						<>
 							{steeringRecords.length > 0 ? (
 								<div className="mt-10">
-									<h3 className="mb-4 text-lg font-semibold text-gray-900">
-										Current Steering Records ({steeringRecords.length})
-									</h3>
+									<div className="mb-4 flex items-center justify-between">
+										<h3 className="text-lg font-semibold text-gray-900">
+											Current Steering Records ({steeringRecords.length})
+											{selectedCurrentRows.size > 0 && (
+												<span className="ml-2 text-sm text-red-600">
+													({selectedCurrentRows.size} selected for
+													deletion)
+												</span>
+											)}
+										</h3>
+										<div className="flex items-center gap-2">
+											<button
+												onClick={handleSelectAllCurrent}
+												className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-blue-700"
+											>
+												Select All
+											</button>
+											<br />
+											{selectedCurrentRows.size > 0 && (
+												<>
+													<button
+														onClick={handleClearSelections}
+														className="rounded bg-gray-500 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-gray-600"
+													>
+														Clear Selection
+													</button>
+													<button
+														onClick={() => void handleDeleteSelected()}
+														disabled={deleting}
+														id="delete-selected-button"
+														className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+													>
+														{deleting ? (
+															<>
+																<div className="loader-icon h-4 w-4 animate-spin rounded-full border border-white border-t-transparent"></div>
+																Deleting...
+															</>
+														) : (
+															<>
+																<svg
+																	className="delete-icon h-4 w-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																	/>
+																</svg>
+																Delete Selected (
+																{selectedCurrentRows.size})
+															</>
+														)}
+													</button>
+												</>
+											)}
+											<button
+												onClick={() => void refreshPrices()}
+												disabled={refreshingData}
+												className="flex items-center gap-2 rounded bg-gray-600 px-3 py-1 text-sm text-white transition-colors hover:cursor-pointer hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+											>
+												{refreshingData ? (
+													<>
+														<div className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent"></div>
+														Refreshing...
+													</>
+												) : (
+													<>
+														<svg
+															className="h-3 w-3"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																strokeLinecap="round"
+																strokeLinejoin="round"
+																strokeWidth={2}
+																d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+															/>
+														</svg>
+														Refresh
+													</>
+												)}
+											</button>
+										</div>
+									</div>
 									<SteeringDataTable
 										steerings={steeringRecords}
 										id="current-steering-records"
+										selectedRows={selectedCurrentRows}
+										onRowSelect={handleCurrentRowSelect}
+										onSelectAll={handleSelectAllCurrent}
+										showSelectionControls={true}
 									/>
 								</div>
 							) : (
 								<div className="mb-6">
-									<h3 className="mb-4 text-lg font-semibold text-gray-900">
-										Raw API Response
-									</h3>
-									<pre className="overflow-x-auto whitespace-pre-wrap break-all rounded border bg-gray-100 p-4 text-xs">
-										{JSON.stringify(prices, null, 2)}
-									</pre>
+									<div className="rounded bg-blue-50 p-4 text-blue-800">
+										<h3 className="mb-2 text-lg font-semibold">
+											No Current Steering Records
+										</h3>
+										<p className="text-sm">
+											No existing steering records were found for the
+											specified location and date range. You can add new
+											records using the form below.
+										</p>
+									</div>
 								</div>
 							)}
 							{entryDataRecords.length > 0 && (
 								<div className="mt-10">
 									<div className="mb-4 flex items-center justify-between">
 										<h3 className="text-lg font-semibold text-gray-900">
-											New Steering Records to be added ({entryDataRecords.length})
+											New Steering Records to be added (
+											{entryDataRecords.length})
 										</h3>
 										<button
 											onClick={() => void handlePublish()}
 											disabled={publishing}
-											className="rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+											className="bg-primary hover:bg-primary/90 text-bold rounded px-4 py-2 text-xl font-bold text-white transition-colors hover:cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400"
 										>
-											{publishing ? 'Publishing...' : 'SAVE'}
+											{publishing ? 'Publishing...' : 'SAVE NEW RECORDS'}
 										</button>
 									</div>
 									<SteeringDataTable

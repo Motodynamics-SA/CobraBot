@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -38,6 +40,13 @@ return [
         'base_url' => env('PRICES_API_BASE_URL', ''),
         'timeout' => env('PRICES_API_TIMEOUT', 30),
         'cache_ttl' => env('PRICES_API_CACHE_TTL', 3500), // 58 minutes in seconds
+    ],
+
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI'),
+        'tenant' => env('MICROSOFT_TENANT_ID'),
     ],
 
 ];

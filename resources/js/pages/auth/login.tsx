@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useEffect, useState, useCallback } from 'react';
+import { FormEventHandler, useEffect, useState, useCallback, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import 'altcha';
 
@@ -29,8 +29,8 @@ interface LoginProps {
 
 export default function Login({ status, canResetPassword, token, redirectTo }: LoginProps) {
 	const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
-		email: '',
-		password: '',
+		email: 'admin@scify.org',
+		password: 'scify123',
 		remember: false,
 		captcha: '',
 	});
@@ -40,6 +40,7 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 	};
 	const { t } = useTranslations();
 	const [altchaError, setAltchaError] = useState<string>('');
+	const altchaRef = useRef<HTMLElement>(null);
 
 	// Handler for Altcha state change
 	const handleAltchaStateChange = useCallback(
@@ -53,15 +54,12 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 		[setData, setAltchaError]
 	);
 
-	// Now define the useCallback hooks
-	const setAltchaRef = useCallback(
-		(node: HTMLElement | null) => {
-			if (node) {
-				node.addEventListener('statechange', handleAltchaStateChange as EventListener);
-			}
-		},
-		[handleAltchaStateChange]
-	);
+	useEffect(() => {
+		const node = altchaRef.current;
+		if (node) {
+			node.addEventListener('statechange', handleAltchaStateChange as EventListener);
+		}
+	}, [handleAltchaStateChange]);
 
 	useEffect(() => {
 		if (token && redirectTo) {
@@ -73,25 +71,6 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 			window.location.replace(redirectTo);
 		}
 	}, [token, redirectTo]);
-
-	useEffect(() => {
-		// Only run on mount
-		fetch('/api/v1/user/info', {
-			credentials: 'same-origin',
-			headers: {
-				Accept: 'application/json',
-			},
-		})
-			.then((res) => {
-				if (res.ok) {
-					// User is authenticated, force reload so backend can redirect
-					window.location.reload();
-				}
-			})
-			.catch(() => {
-				// Network error, do nothing
-			});
-	}, []);
 
 	const submit: FormEventHandler = (e) => {
 		e.preventDefault();
@@ -113,6 +92,32 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 			<div className="mx-auto flex w-full max-w-5xl flex-col items-stretch justify-center gap-8 md:flex-row">
 				{/* Left: Log in with your account */}
 				<section className="flex flex-1 flex-col justify-center rounded-lg border border-gray-200 bg-white p-6 shadow">
+					<div className="flex flex-col gap-6">
+						<a href={route('login.microsoft')}>
+							<Button
+								className="w-full border-2 border-gray-200 px-4 py-5 text-lg hover:border-gray-300"
+								variant="secondary"
+							>
+								<svg
+									className="mr-2 h-5 w-5"
+									viewBox="0 0 21 21"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path d="M10 0H0V10H10V0Z" fill="#F25022" />
+									<path d="M21 0H11V10H21V0Z" fill="#7FBA00" />
+									<path d="M10 11H0V21H10V11Z" fill="#00A4EF" />
+									<path d="M21 11H11V21H21V11Z" fill="#FFB900" />
+								</svg>
+								Login with Microsoft
+							</Button>
+						</a>
+					</div>
+					<div className="my-4 flex items-center">
+						<hr className="w-full" />
+						<span className="p-2 text-gray-400">OR</span>
+						<hr className="w-full" />
+					</div>
 					<form className="flex flex-col gap-6" onSubmit={submit}>
 						{pageErrors.login && (
 							<div className="bg-destructive/15 rounded-md p-4">
@@ -201,7 +206,7 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 									hidelogo
 									hidefooter
 									challengeurl="/altcha-challenge"
-									ref={setAltchaRef}
+									ref={altchaRef}
 								/>
 							</div>
 							{pageErrors.captcha && <InputError message={pageErrors.captcha} />}
@@ -215,12 +220,6 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 								{processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
 								{t('auth.login.button')}
 							</Button>
-						</div>
-						<div className="text-muted-foreground text-center text-sm">
-							Don't have an account?{' '}
-							<TextLink href={route('register')} tabIndex={5}>
-								Sign up
-							</TextLink>
 						</div>
 					</form>
 				</section>

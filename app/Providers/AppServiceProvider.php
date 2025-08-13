@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Enums\RolesEnum;
@@ -11,11 +13,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Microsoft\Provider;
 
 class AppServiceProvider extends ServiceProvider {
     /**
@@ -36,9 +41,7 @@ class AppServiceProvider extends ServiceProvider {
         // Implicitly grant "Super Admin" role all permissions
         // This works in the app by using gate-related functions like auth()->user->can() and @can()
         // NOSONAR
-        Gate::before(function ($user, $ability) {
-            return $user->hasRole(RolesEnum::ADMINISTRATOR) ? true : null;
-        });
+        Gate::before(fn ($user, $ability): ?true => $user->hasRole(RolesEnum::ADMINISTRATOR) ? true : null);
 
         // Uncomment the following line to enable strict mode for Eloquent models
         /**
@@ -86,9 +89,11 @@ class AppServiceProvider extends ServiceProvider {
          */
         Date::use(CarbonImmutable::class);
 
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        Event::listen(function (SocialiteWasCalled $socialiteWasCalled): void {
+            $socialiteWasCalled->extendSocialite('microsoft', Provider::class);
         });
+
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
     }
 
     protected function configureSecureUrls(): void {

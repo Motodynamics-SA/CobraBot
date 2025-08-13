@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Enums\RolesEnum;
@@ -12,7 +14,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller {
     public function __construct(
-        private DashboardService $dashboardService
+        private readonly DashboardService $dashboardService
     ) {}
 
     public function index(): Response|RedirectResponse {

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'title' => 'Settings',
     'description' => 'Manage your profile and account settings',
     'appearance' => [
         'title' => 'Dashboard appearance settings',
-        'description' => 'Update your account\'s dashboard appearance settings',
+        'description' => "Update your account's dashboard appearance settings",
     ],
     'password' => [
         'title' => 'Password settings',

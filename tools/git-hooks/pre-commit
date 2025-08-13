@@ -1,13 +1,30 @@
 #!/bin/bash
 
+# Run Gitleaks secret scanning
+echo "🔒 Running Gitleaks secret scan..."
+if [ -f "./gitleaks" ]; then
+    ./gitleaks protect --verbose --staged
+    GITLEAKS_EXIT_CODE=$?
+    if [ $GITLEAKS_EXIT_CODE -ne 0 ]; then
+        echo "❌ Gitleaks found potential secrets. Commit blocked."
+        echo "Please remove the secrets and try again."
+        echo "If this is a false positive, you can use --no-verify flag to bypass."
+        exit 1
+    fi
+    echo "✅ No secrets detected by Gitleaks."
+else
+    echo "⚠️  Gitleaks not found in project root. Skipping secret scan."
+fi
+
 # Store list of staged files
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=d | grep ".php$" || true)
-STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|jsx|ts|tsx|scss)$" || true)
+STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.(js|jsx|ts|tsx)$" || true)
+STAGED_SCSS=$(git diff --cached --name-only --diff-filter=d | grep -E "\.scss|\.css$" || true)
 
 # Format PHP files
 if [ -n "$STAGED_PHP" ]; then
     echo "🔍 Formatting PHP files..."
-    echo "$STAGED_PHP" | xargs ./vendor/bin/pint
+    echo "$STAGED_PHP" | xargs ./vendor/bin/pint --parallel
     echo "$STAGED_PHP" | xargs git add
 fi
 
@@ -16,6 +33,13 @@ if [ -n "$STAGED_JS_TS" ]; then
     echo "🔍 Formatting JS/TS/SCSS files..."
     echo "$STAGED_JS_TS" | xargs npm run format:staged
     echo "$STAGED_JS_TS" | xargs git add
+fi
+
+# Format SCSS files
+if [ -n "$STAGED_SCSS" ]; then
+    echo "🔍 Formatting SCSS files..."
+    echo "$STAGED_SCSS" | xargs npm run format:staged:styles
+    echo "$STAGED_SCSS" | xargs git add
 fi
 
 exit 0
