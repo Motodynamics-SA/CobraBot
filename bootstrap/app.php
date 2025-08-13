@@ -13,11 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Env;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-// Only load .env if APP_ENV isn't already set
+// Only load .env if APP_ENV isn't already set and .env file exists
 if (getenv('APP_ENV') !== 'testing') {
-    // Step 1: Load the main .env file
-    $dotenv = Dotenv\Dotenv::createMutable(dirname(__DIR__));
-    $dotenv->load();
+    // Step 1: Load the main .env file only if it exists
+    $envPath = dirname(__DIR__) . '/.env';
+    if (file_exists($envPath)) {
+        $dotenv = Dotenv\Dotenv::createMutable(dirname(__DIR__));
+        $dotenv->load();
+    }
 
     // Step 2: Only load additional .env file if APP_DEVELOPMENT_ENV is set
     // and if app is in local mode

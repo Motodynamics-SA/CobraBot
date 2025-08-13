@@ -23,6 +23,9 @@ jobs:
               with:
                   php-version: '8.4'
 
+            - name: Set production environment
+              run: echo "APP_ENV=production" >> $GITHUB_ENV
+
             - name: Check if composer.json exists
               id: check_files
               uses: andstor/file-existence-action@v1
@@ -33,11 +36,28 @@ jobs:
               if: steps.check_files.outputs.files_exists == 'true'
               run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
 
+            - name: Remove any .env files before deployment
+              run: |
+                find . -name ".env*" -type f -delete
+                echo "Removed any .env files"
+
+            - name: Verify no .env files remain
+              run: |
+                if find . -name ".env*" -type f | grep -q .; then
+                  echo "❌ .env files still exist:"
+                  find . -name ".env*" -type f
+                  exit 1
+                else
+                  echo "✅ No .env files found"
+                fi
+
             - name: Upload artifact for deployment job
               uses: actions/upload-artifact@v4
               with:
                   name: php-app
                   path: .
+                  if-no-files-found: error
+                  retention-days: 1
 
     deploy:
         runs-on: ubuntu-latest
