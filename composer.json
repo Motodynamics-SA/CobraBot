@@ -57,7 +57,7 @@
 			"@php artisan vendor:publish --tag=laravel-assets --ansi --force"
 		],
 		"post-root-package-install": [
-			"@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+			"@php -r \"if (!getenv('CI') && !getenv('APP_ENV') && !getenv('AZURE_WEBAPP_NAME') && file_exists('.env.example') && !file_exists('.env')) { copy('.env.example', '.env'); }\""
 		],
 		"post-create-project-cmd": [
 			"@php artisan key:generate --ansi",
