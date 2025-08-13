@@ -1,5 +1,13 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
+# This workflow:
+# - Builds the Laravel app
+# - Removes any .env* files from the artifact
+# - Temporarily allows the current runner's public IP on BOTH main + SCM (Kudu)
+# - Ensures Public Network Access is enabled for the deploy
+# - Deploys via Publish Profile
+# - Sets the startup script
+# - Cleans up the temporary IP rules
 
 name: Build and deploy PHP app to Azure Web App - cobrabot
 
@@ -31,7 +39,7 @@ jobs:
               with:
                   files: 'composer.json'
 
-            - name: Run composer install if composer.json exists
+            - name: Install PHP dependencies (no-dev) if composer.json exists
               if: steps.check_files.outputs.files_exists == 'true'
               run: |
                   composer validate --no-check-publish
@@ -63,6 +71,10 @@ jobs:
     deploy:
         runs-on: ubuntu-latest
         needs: build
+        # OIDC login requires id-token permission
+        permissions:
+            id-token: write
+            contents: read
 
         env:
             RG: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
@@ -74,26 +86,46 @@ jobs:
               with:
                   name: php-app
 
-            # Login to Azure for access restriction + startup command management
-            - name: Azure login (Service Principal)
+            - name: Azure login (OIDC)
               uses: azure/login@v2
               with:
-                  creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
             - name: Get runner public IP
               id: ip
               run: echo "PUBLIC_IP=$(curl -s https://api.ipify.org)" >> "$GITHUB_OUTPUT"
 
-            - name: Allowlist runner IP on SCM (Kudu)
+            - name: Prepare access rules for deploy (enable PNA, split SCM rules, add IP to SCM + MAIN)
               run: |
-                  echo "Allowing ${{ steps.ip.outputs.PUBLIC_IP }}/32 on SCM for $APP..."
+                  set -e
+                  echo "Enabling Public Network Access on $APP (if disabled)..."
+                  az resource update -g "$RG" \
+                    --name "$APP" \
+                    --resource-type "Microsoft.Web/sites" \
+                    --set properties.publicNetworkAccess=Enabled
+
+                  echo "Ensure SCM does NOT inherit main-site rules..."
+                  az webapp config access-restriction set -g "$RG" -n "$APP" \
+                    --use-same-restrictions-for-scm-site false
+
+                  IP="${{ steps.ip.outputs.PUBLIC_IP }}"
+                  echo "Allowing ${IP}/32 on SCM and MAIN for $APP..."
+
+                  # Add to SCM (Kudu)
                   az webapp config access-restriction add \
                     -g "$RG" -n "$APP" \
-                    --rule-name "gh-runner-${{ steps.ip.outputs.PUBLIC_IP }}" \
-                    --action Allow \
-                    --ip-address "${{ steps.ip.outputs.PUBLIC_IP }}/32" \
-                    --priority 120 \
-                    --scm-site true
+                    --rule-name "gh-scm-${IP}" \
+                    --action Allow --ip-address "${IP}/32" \
+                    --priority 120 --scm-site true
+
+                  # Add to MAIN site (belt and suspenders)
+                  az webapp config access-restriction add \
+                    -g "$RG" -n "$APP" \
+                    --rule-name "gh-main-${IP}" \
+                    --action Allow --ip-address "${IP}/32" \
+                    --priority 120
 
             - name: Deploy to Azure Web App
               id: deploy-to-webapp
@@ -105,22 +137,22 @@ jobs:
                   publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B408F1FA702C414EBD92E3521D98D7CE }}
 
             - name: Set startup command
-              uses: azure/cli@v1
-              with:
-                  inlineScript: |
-                      az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-                      az webapp config set \
-                        --name ${{ secrets.AZURE_WEBAPP_NAME }} \
-                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
-                        --startup-file ./azure/azure-startup.sh
+              run: |
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --startup-file "./azure/azure-startup.sh"
 
-            # Always clean up the temporary rule, even on failure
-            - name: Remove temporary SCM IP rule
+            - name: Cleanup temporary IP rules
               if: always()
               run: |
-                  RULE_NAME="gh-runner-${{ steps.ip.outputs.PUBLIC_IP }}"
-                  echo "Removing temporary rule $RULE_NAME from SCM..."
-                  az webapp config access-restriction remove \
-                    -g "$RG" -n "$APP" \
-                    --rule-name "$RULE_NAME" \
-                    --scm-site true
+                  IP="${{ steps.ip.outputs.PUBLIC_IP }}"
+                  echo "Removing temporary rules for ${IP}..."
+                  az webapp config access-restriction remove -g "$RG" -n "$APP" \
+                    --rule-name "gh-scm-${IP}" --scm-site true || true
+                  az webapp config access-restriction remove -g "$RG" -n "$APP" \
+                    --rule-name "gh-main-${IP}" || true
+
+                  # If you normally keep Public Network Access disabled, re-disable it here:
+                  # az resource update -g "$RG" --name "$APP" --resource-type "Microsoft.Web/sites" \
+                  #   --set properties.publicNetworkAccess=Disabled || true
