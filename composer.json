@@ -75,6 +75,18 @@
 		],
 		"post-install-cmd": [
 			"bash tools/git-hooks/install.sh"
+		],
+		"lint": [
+			"npm run lint",
+			"npm run lint:styles",
+			"npm run format:check",
+			"vendor/bin/phpstan analyse --memory-limit=2G --configuration=phpstan.neon",
+            "vendor/bin/rector --dry-run"
+		],
+		"format": [
+			"npm run format",
+			"vendor/bin/pint --parallel",
+			"vendor/bin/rector"
 		]
 	},
 	"extra": {
