@@ -157,12 +157,12 @@ jobs:
 
             - name: Prepare startup script (permissions & line endings)
               run: |
-                if command -v dos2unix >/dev/null 2>&1; then
-                  dos2unix azure/azure-startup.sh || true
-                else
-                  sed -i 's/\r$//' azure/azure-startup.sh || true
-                fi
-                git update-index --chmod=+x azure/azure-startup.sh || true
+                  if command -v dos2unix >/dev/null 2>&1; then
+                    dos2unix azure/azure-startup.sh || true
+                  else
+                    sed -i 's/\r$//' azure/azure-startup.sh || true
+                  fi
+                  git update-index --chmod=+x azure/azure-startup.sh || true
 
             - name: Configure web app for custom startup
               run: |
@@ -182,7 +182,7 @@ jobs:
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --startup-file "bash -lc 'cp /home/site/wwwroot/azure/nginx_laravel.conf /etc/nginx/sites-enabled/default && service nginx reload || true; /home/site/wwwroot/azure/azure-startup.sh'"
+                    --startup-file "bash -lc 'cp /home/site/wwwroot/azure/nginx_laravel.conf /etc/nginx/sites-enabled/default && service nginx reload || true && /home/site/wwwroot/azure/azure-startup.sh'"
 
             - name: Restart App Service
               run: |
