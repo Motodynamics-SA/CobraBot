@@ -47,6 +47,10 @@ jobs:
               run: |
                   composer validate --no-check-publish
                   composer install --prefer-dist --no-progress --no-interaction --no-dev
+                  php artisan optimize || true
+                  php artisan config:cache || true
+                  php artisan route:cache || true
+                  php artisan view:cache || true
 
             - name: Install npm dependencies
               run: npm ci
@@ -144,6 +148,9 @@ jobs:
                   package: .
                   publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B408F1FA702C414EBD92E3521D98D7CE }}
 
+            - name: Ensure startup script is executable
+              run: git update-index --chmod=+x azure/azure-startup.sh || true
+
             - name: Configure web app for custom startup
               run: |
                   echo "Configuring web app for custom startup..."
@@ -154,26 +161,20 @@ jobs:
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
 
-                  # Set the startup command
+            # ---- NGINX override: copy your config and reload on container start ----
+            # We replace any previous Startup Command and set a new one that copies our file into place
+            # and reloads NGINX. Your file must exist at /home/site/wwwroot/azure/nginx_laravel.conf after deploy.
+            - name: Apply custom NGINX config (via Startup Command)
+              run: |
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --startup-file "bash azure/azure-startup.sh"
+                    --startup-file "bash -lc 'cp /home/site/wwwroot/azure/nginx_laravel.conf /etc/nginx/sites-enabled/default && service nginx reload || true; /home/site/wwwroot/azure/azure-startup.sh'"
 
-                  # Verify the startup command was set
-                  echo "Verifying startup command..."
-                  az webapp config show \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --query "appCommandLine" \
-                    --output table
 
-            - name: Verify startup script exists and is executable
+            - name: Restart App Service
               run: |
-                  echo "Checking startup script..."
-                  ls -la ./azure/azure-startup.sh
-                  echo "Startup script contents (first 10 lines):"
-                  head -10 ./azure/azure-startup.sh
+                  az webapp restart --name "$APP" --resource-group "$RG"
 
             - name: Deployment Summary and Log Access Instructions
               run: |
