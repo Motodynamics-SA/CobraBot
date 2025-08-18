@@ -9,8 +9,9 @@ cd "$APP_ROOT"
 if [ -f "$APP_ROOT/azure/nginx_laravel.conf" ]; then
   echo "[startup] Installing nginx site config..."
   cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
+  cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-available/default || true
   echo "[startup] Reloading nginx..."
-  service nginx reload || true
+  nginx -t && service nginx reload
 fi
 
 echo "[startup] Ensuring storage & cache directories exist..."
