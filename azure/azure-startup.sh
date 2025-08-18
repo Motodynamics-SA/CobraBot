@@ -1,24 +1,39 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-echo "[startup] Begin $(date -Is)"
+echo "[startup] ===== Laravel Startup Script BEGIN $(date -Is) ====="
 
 APP_ROOT="/home/site/wwwroot"
 cd "$APP_ROOT"
 
-# 1) Ensure writable dirs on the persistent /home volume
-mkdir -p /home/storage/{app/public,app/private,framework/{sessions,views,cache,cache/data,cache/compiled},logs} /home/cache
-# Optional: point Laravel to these paths via env vars you already set (e.g., APP_STORAGE_PATH=/home/storage)
+echo "[startup] Ensuring storage & cache directories exist..."
+mkdir -p /home/storage/{app/public,app/private,framework/{sessions,views,cache,cache/data,cache/compiled},logs}
+mkdir -p /home/cache
 
-# 2) Laravel housekeeping (idempotent)
+echo "[startup] Checking Laravel version..."
+php artisan --version || true
+
+echo "[startup] Running: php artisan storage:link"
 php artisan storage:link || true
+
+echo "[startup] Clearing caches (config/route/view) if present..."
+php artisan cache:clear   || true
+php artisan config:clear  || true
+php artisan route:clear   || true
+php artisan view:clear    || true
+
+echo "[startup] Optimizing application..."
 php artisan optimize || true
+
+echo "[startup] Rebuilding caches..."
 php artisan config:cache || true
-php artisan route:cache || true
-php artisan view:cache || true
+php artisan route:cache  || true
+php artisan view:cache   || true
+
+echo "[startup] Restarting queues (if any)..."
 php artisan queue:restart || true
 
-# 3) (Optional) very fast health check log
-php -v | head -n1 || true
+echo "[startup] PHP version info:"
+php -v | head -n 1 || true
 
-echo "[startup] Done $(date -Is)"
+echo "[startup] ===== Laravel Startup Script END $(date -Is) ====="
