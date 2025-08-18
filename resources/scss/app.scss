@@ -147,11 +147,3 @@
 		@apply bg-background text-foreground;
 	}
 }
-/* stylelint-enable at-rule-no-deprecated */
-
-body {
-	#scify-cookie-consent-floating-button {
-		right: var(--scify-cookies-floating-btn-left);
-		left: auto;
-	}
-}
