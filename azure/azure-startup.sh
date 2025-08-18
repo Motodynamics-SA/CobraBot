@@ -6,6 +6,13 @@ echo "[startup] ===== Laravel Startup Script BEGIN $(date -Is) ====="
 APP_ROOT="/home/site/wwwroot"
 cd "$APP_ROOT"
 
+if [ -f "$APP_ROOT/azure/nginx_laravel.conf" ]; then
+  echo "[startup] Installing nginx site config..."
+  cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
+  echo "[startup] Reloading nginx..."
+  service nginx reload || true
+fi
+
 echo "[startup] Ensuring storage & cache directories exist..."
 mkdir -p /home/storage/{app/public,app/private,framework/{sessions,views,cache,cache/data,cache/compiled},logs}
 mkdir -p /home/cache
