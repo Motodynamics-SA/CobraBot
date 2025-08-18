@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
+import { useRef } from 'react';
 import { useTranslations } from '@/hooks/use-translations';
 
 import InputError from '@/components/input-error';
@@ -22,17 +22,13 @@ import {
 export default function DeleteUser() {
 	const { t } = useTranslations();
 	const passwordInput = useRef<HTMLInputElement>(null);
-	const {
-		data,
-		setData,
-		delete: destroy,
-		processing,
-		reset,
-		errors,
-		clearErrors,
-	} = useForm<Required<{ password: string }>>({ password: '' });
+	const form = useForm<Required<{ password: string }>>({ password: '' });
+	const { data, setData, processing, errors } = form;
+	const destroy = (...args: Parameters<typeof form.delete>) => form.delete(...args);
+	const reset = (...args: Parameters<typeof form.reset>) => form.reset(...args);
+	const clearErrors = (...args: Parameters<typeof form.clearErrors>) => form.clearErrors(...args);
 
-	const deleteUser: FormEventHandler = (e) => {
+	const deleteUser = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
 		destroy(route('profile.destroy'), {

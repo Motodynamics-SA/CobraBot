@@ -114,7 +114,7 @@ export function NavMain({ items }: NavMainProps) {
 												onClick={() => handleChildClick(index)}
 											>
 												<Link
-													href={child.href!}
+													href={child.href}
 													className={cn(
 														'mb-1 flex items-center rounded-md px-3 py-1',
 														isRouteActive(child.href)
@@ -142,7 +142,7 @@ export function NavMain({ items }: NavMainProps) {
 							onClick={item.onClick as MouseEventHandler | undefined}
 						>
 							<Link
-								href={item.href!}
+								href={item.href}
 								className={cn(
 									'flex items-center rounded-md px-2 py-1',
 									isRouteActive(item.href)

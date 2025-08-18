@@ -154,14 +154,6 @@ jobs:
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
 
-                  # Enable custom startup command
-                  az webapp config set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --startup-command ""
-
-            - name: Set startup command
-              run: |
                   # Ensure the startup script has execute permissions
                   chmod +x ./azure/azure-startup.sh
 

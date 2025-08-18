@@ -1,6 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -17,14 +16,17 @@ type RegisterForm = {
 };
 
 export default function Register() {
-	const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
+	const form = useForm<Required<RegisterForm>>({
 		name: '',
 		email: '',
 		password: '',
 		password_confirmation: '',
 	});
+	const { data, setData, processing, errors } = form;
+	const post = (...args: Parameters<typeof form.post>) => form.post(...args);
+	const reset = (...args: Parameters<typeof form.reset>) => form.reset(...args);
 
-	const submit: FormEventHandler = (e) => {
+	const submit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		post(route('register'), {
 			onFinish: () => reset('password', 'password_confirmation'),

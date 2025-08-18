@@ -10,11 +10,12 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function ConfirmPassword() {
-	const { data, setData, post, processing, errors, reset } = useForm<
-		Required<{ password: string }>
-	>({
+	const form = useForm<Required<{ password: string }>>({
 		password: '',
 	});
+	const { data, setData, processing, errors } = form;
+	const post = (...args: Parameters<typeof form.post>) => form.post(...args);
+	const reset = (...args: Parameters<typeof form.reset>) => form.reset(...args);
 
 	const submit: FormEventHandler = (e) => {
 		e.preventDefault();
