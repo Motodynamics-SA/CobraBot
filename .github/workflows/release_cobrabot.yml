@@ -30,6 +30,18 @@ jobs:
               with:
                   php-version: '8.4'
 
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+
+            - name: Install npm dependencies
+              run: npm ci
+
+            - name: Build frontend assets
+              run: npm run prod
+
             - name: Set production environment
               run: echo "APP_ENV=production" >> $GITHUB_ENV
 
@@ -132,12 +144,77 @@ jobs:
                   package: .
                   publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B408F1FA702C414EBD92E3521D98D7CE }}
 
+            - name: Configure web app for custom startup
+              run: |
+                  echo "Configuring web app for custom startup..."
+
+                  # Set the runtime stack to PHP
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --linux-fx-version "PHP|8.4"
+
+                  # Enable custom startup command
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --startup-command ""
+
             - name: Set startup command
               run: |
+                  # Ensure the startup script has execute permissions
+                  chmod +x ./azure/azure-startup.sh
+
+                  # Set the startup command
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
                     --startup-file "./azure/azure-startup.sh"
+
+                  # Verify the startup command was set
+                  echo "Verifying startup command..."
+                  az webapp config show \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --query "appCommandLine" \
+                    --output table
+
+            - name: Verify startup script exists and is executable
+              run: |
+                  echo "Checking startup script..."
+                  ls -la ./azure/azure-startup.sh
+                  echo "Startup script contents (first 10 lines):"
+                  head -10 ./azure/azure-startup.sh
+
+            - name: Deployment Summary and Log Access Instructions
+              run: |
+                  echo ""
+                  echo "🚀 DEPLOYMENT COMPLETED SUCCESSFULLY!"
+                  echo "======================================"
+                  echo ""
+                  echo "📱 Your Laravel application has been deployed to Azure Web App: $APP"
+                  echo ""
+                  echo "📊 To monitor your application and view logs:"
+                  echo ""
+                  echo "1️⃣ REAL-TIME LOGS (Recommended):"
+                  echo "   Azure Portal: https://portal.azure.com → Web App → $APP → Monitoring → Log stream"
+                  echo ""
+                  echo "2️⃣ COMMAND LINE LOGS:"
+                  echo "   az webapp log tail --name $APP --resource-group $RG"
+                  echo ""
+                  echo "3️⃣ KUDU DEBUG CONSOLE:"
+                  echo "   Azure Portal: Web App → $APP → Development Tools → Kudu → Debug Console"
+                  echo ""
+                  echo "4️⃣ APPLICATION URL:"
+                  echo "   https://$APP.azurewebsites.net"
+                  echo ""
+                  echo "⚠️  Note: The startup script will run automatically when the web app starts."
+                  echo "   You can trigger a restart from the Azure Portal if needed."
+                  echo ""
+                  echo "🔍 If you see the default Azure page instead of your Laravel app:"
+                  echo "   - Check the log stream for startup script errors"
+                  echo "   - Verify the startup command was set correctly"
+                  echo "   - Restart the web app to re-run the startup script"
 
             - name: Cleanup temporary IP rules
               if: always()
