@@ -28,12 +28,15 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword, token, redirectTo }: LoginProps) {
-	const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
-		email: 'admin@scify.org',
-		password: 'scify123',
+	const form = useForm<Required<LoginForm>>({
+		email: '',
+		password: '',
 		remember: false,
 		captcha: '',
 	});
+	const { data, setData, processing, errors } = form;
+	const post = (...args: Parameters<typeof form.post>) => form.post(...args);
+	const reset = (...args: Parameters<typeof form.reset>) => form.reset(...args);
 
 	const { errors: pageErrors } = usePage().props as {
 		errors: { email?: string; login?: string; captcha?: string };

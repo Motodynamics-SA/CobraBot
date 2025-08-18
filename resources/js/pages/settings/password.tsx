@@ -4,7 +4,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
+import { useRef } from 'react';
 import { useTranslations } from '@/hooks/use-translations';
 
 import HeadingSmall from '@/components/heading-small';
@@ -24,13 +24,17 @@ export default function Password() {
 	const passwordInput = useRef<HTMLInputElement>(null);
 	const currentPasswordInput = useRef<HTMLInputElement>(null);
 
-	const { data, setData, errors, put, reset, processing, recentlySuccessful } = useForm({
+	const form = useForm({
 		current_password: '',
 		password: '',
 		password_confirmation: '',
 	});
+	const { data, setData, processing, errors } = form;
+	const put = (...args: Parameters<typeof form.put>) => form.put(...args);
+	const reset = (...args: Parameters<typeof form.reset>) => form.reset(...args);
+	const recentlySuccessful = form.recentlySuccessful || false;
 
-	const updatePassword: FormEventHandler = (e) => {
+	const updatePassword = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
 		put(route('password.update'), {
