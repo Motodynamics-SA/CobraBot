@@ -29,7 +29,7 @@ class RolesAndPermissionsSeeder extends Seeder {
             ->map(fn ($permission) => Permission::firstOrCreate(['name' => $permission->value]));
 
         // Create roles and assign permissions
-        $adminRole = Role::create(['name' => RolesEnum::ADMINISTRATOR->value]);
+        $adminRole = Role::updateOrCreate(['name' => RolesEnum::ADMINISTRATOR->value]);
 
         // create roles using RolesEnum
         $admin_role = Role::firstOrCreate(['name' => RolesEnum::ADMINISTRATOR->value, 'guard_name' => 'web']);
