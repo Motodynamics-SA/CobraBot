@@ -18,9 +18,10 @@ class UsersSeeder extends Seeder {
 
         // Create or update the admin user
         $admin = User::updateOrCreate(
-            ['email' => 'admin@scify.org'],
+            ['id' => 1],
             [
                 'name' => 'Admin User',
+                'email' => 'cobrabot_admin@sixt.gr',
                 'password' => Hash::make($password),
             ]
         );
@@ -28,9 +29,10 @@ class UsersSeeder extends Seeder {
 
         // Create or update the user manager
         $userManager = User::updateOrCreate(
-            ['email' => 'user_manager@scify.org'],
+            ['id' => 2],
             [
                 'name' => 'User Manager',
+                'email' => 'cobrabot_user_manager@sixt.gr',
                 'password' => Hash::make($password),
             ]
         );
@@ -38,9 +40,10 @@ class UsersSeeder extends Seeder {
 
         // Create or update the registered user
         $registeredUser = User::updateOrCreate(
-            ['email' => 'registered_user@scify.org'],
+            ['id' => 3],
             [
                 'name' => 'Registered User',
+                'email' => 'cobrabot_registered_user@sixt.gr',
                 'password' => Hash::make($password),
             ]
         );
