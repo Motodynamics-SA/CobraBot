@@ -165,11 +165,11 @@ class AddSecurityHeaders {
          * Disables caching for authenticated users to prevent sensitive data from being stored.
          * Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
          */
-        // if (auth()->check()) {
-        //     $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-        //     $response->headers->set('Pragma', 'no-cache'); // legacy support
-        //     $response->headers->set('Expires', 'Mon, 01 Jan 1990 00:00:00 GMT'); // legacy support
-        // }
+        if (auth()->check()) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('Pragma', 'no-cache'); // legacy support
+            $response->headers->set('Expires', 'Mon, 01 Jan 1990 00:00:00 GMT'); // legacy support
+        }
 
         return $response;
     }
