@@ -135,9 +135,9 @@ class AddSecurityHeaders {
          *
          * Uncomment if using logout routes and want to enforce fresh sessions.
          */
-        // if ($request->routeIs('logout') || $request->routeIs('api.logout')) {
-        //     $response->headers->set('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
-        // }
+        if ($request->routeIs('logout') || $request->routeIs('api.logout')) {
+            $response->headers->set('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+        }
 
         /**
          * Cross-Origin Embedder Policy (COEP)
