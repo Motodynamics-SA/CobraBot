@@ -189,11 +189,11 @@ jobs:
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
 
-                  # Set health check path
+                  # Set health check path using generic configurations
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --health-check-path "/health"
+                    --generic-configurations '{"healthCheckPath": "/health"}'
 
                   # Enable Always On to prevent cold starts
                   az webapp config set \
