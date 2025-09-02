@@ -164,21 +164,6 @@ jobs:
                   fi
                   git update-index --chmod=+x azure/azure-startup.sh || true
 
-            - name: Create PHP-FPM configuration for better reliability
-              run: |
-                  mkdir -p azure/ini
-                  cat > azure/ini/php-fpm-custom.ini << 'EOF'
-                  ; PHP-FPM configuration for better reliability
-                  pm = dynamic
-                  pm.max_children = 20
-                  pm.start_servers = 2
-                  pm.min_spare_servers = 1
-                  pm.max_spare_servers = 3
-                  pm.max_requests = 1000
-                  pm.process_idle_timeout = 10s
-                  request_terminate_timeout = 300s
-                  EOF
-
             - name: Configure web app for custom startup
               run: |
                   echo "Configuring web app for custom startup..."
