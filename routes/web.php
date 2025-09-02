@@ -31,5 +31,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::put('/users/{user}/restore', UserRestoreController::class)->name('users.restore')->withTrashed();
 });
 
+Route::get('/health', fn () => response()->noContent());
+
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
