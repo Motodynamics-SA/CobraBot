@@ -174,18 +174,6 @@ jobs:
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
 
-                  # Set health check path using generic configurations
-                  az webapp config set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}'
-
-                  # Enable Always On to prevent cold starts
-                  az webapp config set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --always-on true
-
             # ---- NGINX override: copy your config and reload on container start ----
             # We replace any previous Startup Command and set a new one that copies our file into place
             # and reloads NGINX. Your file must exist at /home/site/wwwroot/azure/nginx_laravel.conf after deploy.
