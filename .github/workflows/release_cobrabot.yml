@@ -164,6 +164,21 @@ jobs:
                   fi
                   git update-index --chmod=+x azure/azure-startup.sh || true
 
+            - name: Create PHP-FPM configuration for better reliability
+              run: |
+                  mkdir -p azure/ini
+                  cat > azure/ini/php-fpm-custom.ini << 'EOF'
+                  ; PHP-FPM configuration for better reliability
+                  pm = dynamic
+                  pm.max_children = 20
+                  pm.start_servers = 2
+                  pm.min_spare_servers = 1
+                  pm.max_spare_servers = 3
+                  pm.max_requests = 1000
+                  pm.process_idle_timeout = 10s
+                  request_terminate_timeout = 300s
+                  EOF
+
             - name: Configure web app for custom startup
               run: |
                   echo "Configuring web app for custom startup..."
@@ -173,6 +188,26 @@ jobs:
                     --name "$APP" \
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
+
+                  # Set health check path
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --health-check-path "/health"
+
+                  # Enable Always On to prevent cold starts
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --always-on true
+
+                  # Configure PHP-FPM settings for better process management
+                  az webapp config appsettings set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --settings \
+                      "PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/home/site/ini" \
+                      "WEBSITES_ENABLE_APP_SERVICE_STORAGE=true"
 
             # ---- NGINX override: copy your config and reload on container start ----
             # We replace any previous Startup Command and set a new one that copies our file into place
