@@ -178,7 +178,7 @@ jobs:
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --generic-configurations '{"healthCheckPath": "/health"}'
+                    --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}'
 
                   # Enable Always On to prevent cold starts
                   az webapp config set \
