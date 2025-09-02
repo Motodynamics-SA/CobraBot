@@ -186,14 +186,6 @@ jobs:
                     --resource-group "$RG" \
                     --always-on true
 
-                  # Configure PHP-FPM settings for better process management
-                  az webapp config appsettings set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --settings \
-                      "PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/home/site/ini" \
-                      "WEBSITES_ENABLE_APP_SERVICE_STORAGE=true"
-
             # ---- NGINX override: copy your config and reload on container start ----
             # We replace any previous Startup Command and set a new one that copies our file into place
             # and reloads NGINX. Your file must exist at /home/site/wwwroot/azure/nginx_laravel.conf after deploy.

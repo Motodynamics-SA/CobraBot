@@ -6,14 +6,6 @@ echo "[startup] ===== Laravel Startup Script BEGIN $(date -Is) ====="
 APP_ROOT="/home/site/wwwroot"
 cd "$APP_ROOT"
 
-# Apply PHP-FPM configuration for better reliability
-if [ -f "$APP_ROOT/azure/ini/php-fpm-custom.ini" ]; then
-  echo "[startup] Applying PHP-FPM configuration..."
-  cp "$APP_ROOT/azure/ini/php-fpm-custom.ini" /usr/local/etc/php-fpm.d/zz-custom.conf || true
-  # Restart PHP-FPM to apply new configuration
-  service php8.4-fpm restart || service php-fpm restart || true
-fi
-
 if [ -f "$APP_ROOT/azure/nginx_laravel.conf" ]; then
   echo "[startup] Installing nginx site config..."
   cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
