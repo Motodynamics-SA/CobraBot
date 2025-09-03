@@ -46,7 +46,7 @@ jobs:
               if: steps.check_files.outputs.files_exists == 'true'
               run: |
                   composer validate --no-check-publish
-                  composer install --prefer-dist --no-progress --no-interaction --no-dev
+                  composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
                   php artisan optimize || true
                   php artisan config:cache || true
                   php artisan route:cache || true
@@ -168,11 +168,16 @@ jobs:
               run: |
                   echo "Configuring web app for custom startup..."
 
-                  # Set the runtime stack to PHP
+                  # Set the runtime stack to PHP 8.4
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
+                    
+                  # Ensure PHP 8.4 is explicitly set
+                  az webapp config appsettings set \
+                    --name "$APP" --resource-group "$RG" \
+                    --settings PHP_VERSION=8.4
 
             # Enable Always On to prevent cold starts
             - name: Enable Always On to prevent cold starts
@@ -204,7 +209,7 @@ jobs:
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --startup-file "/bin/sh -c '/home/site/wwwroot/azure/azure-startup.sh; /opt/startup/startup.sh'"
+                    --startup-file "/bin/sh -c '/home/site/wwwroot/azure/azure-startup.sh; exec /opt/startup/startup.sh'"
 
             - name: Restart App Service
               run: |
