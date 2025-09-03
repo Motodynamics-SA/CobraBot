@@ -61,4 +61,4 @@ echo "[startup] ===== Laravel Startup Script END $(date -Is) ====="
 echo "[startup] Handover to platform starter..."
 echo "[startup] ===== END $(date -Is) ====="
 
-exec /opt/startup/startup.sh
+exit 0
