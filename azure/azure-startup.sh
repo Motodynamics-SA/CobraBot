@@ -30,9 +30,6 @@ chmod -R 755 "$APP_ROOT/bootstrap/cache"
 echo "[startup] Checking Laravel version..."
 php artisan --version || true
 
-echo "[startup] Running database migrations..."
-php artisan migrate --force || true
-
 echo "[startup] Running: php artisan storage:link"
 php artisan storage:link || true
 
@@ -61,4 +58,4 @@ echo "[startup] ===== Laravel Startup Script END $(date -Is) ====="
 echo "[startup] Handover to platform starter..."
 echo "[startup] ===== END $(date -Is) ====="
 
-exec /opt/startup/startup.sh
+exit 0
