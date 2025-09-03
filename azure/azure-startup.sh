@@ -10,8 +10,6 @@ if [ -f "$APP_ROOT/azure/nginx_laravel.conf" ]; then
   echo "[startup] Installing nginx site config..."
   cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
   cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-available/default || true
-  echo "[startup] Reloading nginx..."
-  nginx -t && service nginx reload
 fi
 
 echo "[startup] Ensuring storage & cache directories exist..."
@@ -21,7 +19,7 @@ mkdir -p /home/cache
 echo "[startup] Creating Laravel storage symlinks..."
 mkdir -p "$APP_ROOT/storage/app/public"
 mkdir -p "$APP_ROOT/storage/framework/cache/data"
-mkdir -p "$APP_ROOT/storage/framework/sessions" 
+mkdir -p "$APP_ROOT/storage/framework/sessions"
 mkdir -p "$APP_ROOT/storage/framework/views"
 mkdir -p "$APP_ROOT/storage/logs"
 
@@ -59,3 +57,8 @@ echo "[startup] PHP version info:"
 php -v | head -n 1 || true
 
 echo "[startup] ===== Laravel Startup Script END $(date -Is) ====="
+
+echo "[startup] Handover to platform starter..."
+echo "[startup] ===== END $(date -Is) ====="
+
+exec /opt/startup/startup.sh
