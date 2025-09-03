@@ -197,7 +197,7 @@ jobs:
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --startup-file "/bin/sh -c '/home/site/wwwroot/azure/azure-startup.sh'"
+                    --startup-file "bash -c 'cp /home/site/wwwroot/azure/nginx_laravel.conf /etc/nginx/sites-enabled/default && . /home/site/wwwroot/azure/azure-startup.sh && service nginx reload'"
 
             - name: Restart App Service
               run: |
