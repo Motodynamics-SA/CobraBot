@@ -148,6 +148,18 @@ jobs:
                   package: .
                   publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B408F1FA702C414EBD92E3521D98D7CE }}
 
+            - name: Remove default Azure files
+              run: |
+                  echo "Removing default Azure files..."
+                  az webapp deployment source config-zip \
+                    --resource-group "$RG" \
+                    --name "$APP" \
+                    --src /dev/null || true
+                  
+                  # Remove hostingstart.html if it exists
+                  az webapp ssh --resource-group "$RG" --name "$APP" \
+                    --command "rm -f /home/site/wwwroot/hostingstart.html" || true
+
             - name: Reset the startup script
               run: |
                   az webapp config set \
