@@ -18,8 +18,22 @@ echo "[startup] Ensuring storage & cache directories exist..."
 mkdir -p /home/storage/{app/public,app/private,framework/{sessions,views,cache,cache/data,cache/compiled},logs}
 mkdir -p /home/cache
 
+echo "[startup] Creating Laravel storage symlinks..."
+mkdir -p "$APP_ROOT/storage/app/public"
+mkdir -p "$APP_ROOT/storage/framework/cache/data"
+mkdir -p "$APP_ROOT/storage/framework/sessions" 
+mkdir -p "$APP_ROOT/storage/framework/views"
+mkdir -p "$APP_ROOT/storage/logs"
+
+echo "[startup] Setting storage permissions..."
+chmod -R 755 "$APP_ROOT/storage"
+chmod -R 755 "$APP_ROOT/bootstrap/cache"
+
 echo "[startup] Checking Laravel version..."
 php artisan --version || true
+
+echo "[startup] Running database migrations..."
+php artisan migrate --force || true
 
 echo "[startup] Running: php artisan storage:link"
 php artisan storage:link || true

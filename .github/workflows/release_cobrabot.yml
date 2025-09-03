@@ -46,7 +46,7 @@ jobs:
               if: steps.check_files.outputs.files_exists == 'true'
               run: |
                   composer validate --no-check-publish
-                  composer install --prefer-dist --no-progress --no-interaction --no-dev
+                  composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
                   php artisan optimize || true
                   php artisan config:cache || true
                   php artisan route:cache || true
@@ -148,6 +148,18 @@ jobs:
                   package: .
                   publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B408F1FA702C414EBD92E3521D98D7CE }}
 
+            - name: Remove default Azure files
+              run: |
+                  echo "Removing default Azure files..."
+                  az webapp deployment source config-zip \
+                    --resource-group "$RG" \
+                    --name "$APP" \
+                    --src /dev/null || true
+                  
+                  # Remove hostingstart.html if it exists
+                  az webapp ssh --resource-group "$RG" --name "$APP" \
+                    --command "rm -f /home/site/wwwroot/hostingstart.html" || true
+
             - name: Reset the startup script
               run: |
                   az webapp config set \
@@ -168,11 +180,16 @@ jobs:
               run: |
                   echo "Configuring web app for custom startup..."
 
-                  # Set the runtime stack to PHP
+                  # Set the runtime stack to PHP 8.4
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
                     --linux-fx-version "PHP|8.4"
+                    
+                  # Ensure PHP 8.4 is explicitly set
+                  az webapp config appsettings set \
+                    --name "$APP" --resource-group "$RG" \
+                    --settings PHP_VERSION=8.4
 
             # Enable Always On to prevent cold starts
             - name: Enable Always On to prevent cold starts
@@ -204,7 +221,7 @@ jobs:
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --startup-file "/bin/sh -c '/home/site/wwwroot/azure/azure-startup.sh; /opt/startup/startup.sh'"
+                    --startup-file "/bin/sh -c '/home/site/wwwroot/azure/azure-startup.sh; exec /opt/startup/startup.sh'"
 
             - name: Restart App Service
               run: |
