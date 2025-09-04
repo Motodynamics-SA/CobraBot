@@ -6,11 +6,37 @@ echo "[startup] ===== Laravel Startup Script BEGIN $(date -Is) ====="
 APP_ROOT="/home/site/wwwroot"
 cd "$APP_ROOT"
 
+# ---- Install nginx site (if present) ----
 if [ -f "$APP_ROOT/azure/nginx_laravel.conf" ]; then
   echo "[startup] Installing nginx site config..."
-  cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
-  cp "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-available/default || true
+  cp -f "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-enabled/default || true
+  cp -f "$APP_ROOT/azure/nginx_laravel.conf" /etc/nginx/sites-available/default || true
+
+  echo "[startup] Validating nginx config..."
+  if nginx -t 2>&1; then
+    echo "[startup] nginx config OK; reloading..."
+    service nginx reload || true
+  else
+    echo "[startup] nginx config INVALID; restoring platform default"
+    rm -f /etc/nginx/sites-enabled/default
+    # Do NOT reload here; let the platform starter bring up the default config
+  fi
 fi
+
+# ---- Ensure .user.ini is in place ----
+if [ -f "$APP_ROOT/azure/.user.ini" ]; then
+  echo "[startup] Installing .user.ini..."
+  cp -f "$APP_ROOT/azure/.user.ini" "$APP_ROOT/.user.ini" || true
+  chmod 644 "$APP_ROOT/.user.ini" || true
+fi
+
+# (Optional) quick warm ping 15s after boot so OPcache/views are primed
+SITE_URL="${SITE_URL:-https://${WEBSITE_HOSTNAME:-}}"
+if [ -n "$SITE_URL" ]; then
+  nohup sh -c "sleep 15 && curl -fsS --max-time 5 $SITE_URL/warm >/dev/null 2>&1" >/dev/null 2>&1 &
+fi
+
+echo "[startup] Startup prep complete"
 
 echo "[startup] Ensuring storage & cache directories exist..."
 mkdir -p /home/storage/{app/public,app/private,framework/{sessions,views,cache,cache/data,cache/compiled},logs}
