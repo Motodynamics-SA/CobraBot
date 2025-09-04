@@ -39,12 +39,12 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^5.2.0",
-		"jest": "^30.1.2",
+		"jest": "^30.1.3",
 		"jest-environment-jsdom": "^30.1.2",
 		"prettier": "^3.6.2",
 		"prettier-plugin-organize-imports": "^4.2.0",
 		"prettier-plugin-tailwindcss": "^0.6.14",
-		"sass-embedded": "^1.91.0",
+		"sass-embedded": "^1.92.0",
 		"ts-jest": "^29.4.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.2",
@@ -62,7 +62,7 @@
 		"@fontsource-variable/quicksand": "^5.2.8",
 		"@fontsource-variable/source-sans-3": "^5.2.8",
 		"@headlessui/react": "^2.2.7",
-		"@inertiajs/react": "^2.1.3",
+		"@inertiajs/react": "^2.1.4",
 		"@radix-ui/react-avatar": "^1.1.10",
 		"@radix-ui/react-checkbox": "^1.3.3",
 		"@radix-ui/react-collapsible": "^1.1.12",
@@ -77,10 +77,10 @@
 		"@radix-ui/react-toggle-group": "^1.1.11",
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@types/react-google-recaptcha": "^2.1.9",
-		"altcha": "^2.2.1",
+		"altcha": "^2.2.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"dotenv": "^17.2.1",
+		"dotenv": "^17.2.2",
 		"globals": "^16.3.0",
 		"laravel-vite-plugin": "^2.0",
 		"lucide-react": "^0.542.0",
@@ -99,5 +99,5 @@
 		"@tailwindcss/oxide-linux-x64-gnu": "^4.1.12",
 		"lightningcss-linux-x64-gnu": "^1.30.1"
 	},
-	"packageManager": "npm@11.5.2"
+	"packageManager": "npm@11.6.0"
 }
