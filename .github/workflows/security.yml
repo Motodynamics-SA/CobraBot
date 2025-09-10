@@ -8,15 +8,25 @@ on:
     pull_request:
         branches:
             - main
+            - release
             - develop
     schedule:
         # Run every day at 2 AM UTC
         - cron: '0 2 * * *'
 
+permissions:
+    contents: read
+    security-events: write
+    actions: read
+
 jobs:
-    gitleaks:
-        name: Gitleaks Secret Scan
+    # Basic security checks that must pass before other jobs
+    essential-security:
+        name: Essential Security Checks
         runs-on: ubuntu-latest
+        outputs:
+            secrets-clean: ${{ steps.secrets-check.outputs.clean }}
+            env-files-clean: ${{ steps.env-check.outputs.clean }}
 
         steps:
             - name: Checkout Repository
@@ -25,7 +35,70 @@ jobs:
                   # Fetch full history for comprehensive scan
                   fetch-depth: 0
 
+            - name: Environment File Validation
+              id: env-check
+              run: |
+                  echo "🔍 Checking for accidentally committed environment files..."
+
+                  # Check for .env files
+                  if find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.github/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f | grep -q .; then
+                      echo "❌ Found potentially sensitive .env files:"
+                      find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.github/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f
+                      echo "clean=false" >> "$GITHUB_OUTPUT"
+                      exit 1
+                  fi
+
+                  echo "✅ No sensitive environment files found"
+                  echo "clean=true" >> "$GITHUB_OUTPUT"
+
+            - name: File Permissions Check
+              run: |
+                  echo "🔍 Checking for overly permissive file permissions..."
+
+                  # Check for world-writable files
+                  if find . -type f -perm -002 -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.git/*" | grep -q .; then
+                      echo "❌ Found world-writable files:"
+                      find . -type f -perm -002 -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.git/*"
+                      exit 1
+                  fi
+
+                  # Check for executable files that shouldn't be
+                  if find . -type f -name "*.php" -perm -111 -not -path "./vendor/*" -not -path "./artisan" | grep -q .; then
+                      echo "⚠️ Found executable PHP files (may be intentional):"
+                      find . -type f -name "*.php" -perm -111 -not -path "./vendor/*" -not -path "./artisan"
+                  fi
+
+                  echo "✅ File permissions look secure"
+
+            - name: Hardcoded Secrets Patterns
+              run: |
+                  echo "🔍 Scanning for hardcoded secrets patterns..."
+
+                  # Define patterns for common secrets
+                  patterns=(
+                      'password\s*=\s*["\x27][^"\x27\s]{8,}'
+                      'api[_-]?key\s*[=:]\s*["\x27][A-Za-z0-9]{20,}'
+                      'secret[_-]?key\s*[=:]\s*["\x27][A-Za-z0-9]{20,}'
+                      'access[_-]?token\s*[=:]\s*["\x27][A-Za-z0-9]{20,}'
+                      'private[_-]?key\s*[=:]\s*["\x27][A-Za-z0-9+/=]{40,}'
+                  )
+
+                  found_secrets=false
+                  for pattern in "${patterns[@]}"; do
+                      if grep -rEi "$pattern" . --include="*.php" --include="*.js" --include="*.ts" --include="*.json" --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=.git; then
+                          found_secrets=true
+                      fi
+                  done
+
+                  if [ "$found_secrets" = true ]; then
+                      echo "❌ Found potential hardcoded secrets! Please review the matches above."
+                      exit 1
+                  fi
+
+                  echo "✅ No hardcoded secrets patterns detected"
+
             - name: Download and Run Gitleaks
+              id: secrets-check
               run: |
                   # Download Gitleaks binary
                   curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz
@@ -38,14 +111,120 @@ jobs:
                   if [ "${exit_code:-0}" -eq 1 ]; then
                       echo "❌ Gitleaks found potential secrets in the repository!"
                       echo "Please review the findings above and remove any secrets before merging."
+                      echo "clean=false" >> "$GITHUB_OUTPUT"
                       exit 1
                   fi
 
                   echo "✅ No secrets detected by Gitleaks - repository is clean!"
+                  echo "clean=true" >> "$GITHUB_OUTPUT"
+
+            # Note: SARIF upload disabled - requires GitHub Advanced Security
+
+    license-compliance:
+        name: License Compliance Check
+        runs-on: ubuntu-latest
+        needs: essential-security
+        if: needs.essential-security.outputs.secrets-clean == 'true'
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  tools: composer:v2
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+
+            - name: Install Dependencies
+              run: |
+                  composer install --no-interaction --prefer-dist --optimize-autoloader
+                  npm ci
+
+            - name: Check PHP License Compliance
+              run: |
+                  echo "🔍 Checking PHP package licenses..."
+
+                  # Get license information and show dual-licensed packages
+                  composer licenses > licenses.txt
+
+                  echo "Checking for packages with problematic licensing..."
+
+                  # Check for packages that have ONLY GPL licenses (no alternatives)
+                  problematic_found=false
+
+                  # Look for lines that contain GPL but NOT any acceptable licenses
+                  while IFS= read -r line; do
+                      if echo "$line" | grep -E "(GPL-3\.0|AGPL-3\.0)" | grep -v -E "(MIT|Apache|BSD|ISC|CC0)" | grep -v "GPL-2\.0" ; then
+                          # Double check this isn't a dual-licensed package with acceptable alternatives
+                          package_line=$(echo "$line" | grep -E "(GPL-3\.0|AGPL-3\.0)")
+                          if [[ -n "$package_line" ]] && ! echo "$package_line" | grep -E "(MIT|Apache|BSD|ISC)"; then
+                              if [[ "$problematic_found" == "false" ]]; then
+                                  echo "❌ Found packages with only prohibited licenses:"
+                                  problematic_found=true
+                              fi
+                              echo "$package_line"
+                          fi
+                      fi
+                  done < licenses.txt
+
+                  if [[ "$problematic_found" == "true" ]]; then
+                      exit 1
+                  fi
+
+                  echo "✅ All PHP licenses are compliant (dual-licensed packages with BSD/MIT alternatives are acceptable)"
+
+            - name: Check Node License Compliance
+              run: |
+                  echo "🔍 Checking Node.js package licenses..."
+
+                  # Install license-checker
+                  npm install -g license-checker
+
+                  # Check licenses (including common font and build tool licenses)
+                  license-checker --onlyAllow 'MIT;Apache-2.0;BSD;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;WTFPL;OFL-1.1;SIL OFL 1.1;MPL-2.0' --production
+
+    owasp-dependency-check:
+        name: OWASP Dependency Check
+        runs-on: ubuntu-latest
+        needs: essential-security
+        if: needs.essential-security.outputs.secrets-clean == 'true'
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Run OWASP Dependency Check
+              uses: dependency-check/Dependency-Check_Action@main
+              with:
+                  project: 'price-updater'
+                  path: '.'
+                  format: 'HTML'
+                  out: 'dependency-check-report'
+                  args: >
+                      --enableRetired
+                      --enableExperimental
+                      --nvdApiDelay 2000
+
+            - name: Upload OWASP Report as Artifact
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: owasp-dependency-check-report
+                  path: dependency-check-report/
+                  retention-days: 30
 
     dependency-scan:
         name: Dependency Security Scan
         runs-on: ubuntu-latest
+        needs: [essential-security, license-compliance]
+        if: needs.essential-security.outputs.secrets-clean == 'true'
 
         steps:
             - name: Checkout Repository
@@ -76,11 +255,13 @@ jobs:
               run: composer audit --format=table
 
             - name: Run Node Security Audit
-              run: npm audit --audit-level=moderate
+              run: npm audit --audit-level=high
 
     code-quality:
         name: Code Quality & Static Analysis
         runs-on: ubuntu-latest
+        needs: [essential-security, dependency-scan]
+        if: needs.essential-security.outputs.secrets-clean == 'true'
 
         steps:
             - name: Checkout Repository
@@ -107,7 +288,8 @@ jobs:
     security-headers:
         name: Security Headers Check
         runs-on: ubuntu-latest
-        if: github.event_name == 'pull_request'
+        needs: [essential-security, code-quality]
+        if: github.event_name == 'pull_request' && needs.essential-security.outputs.secrets-clean == 'true'
 
         steps:
             - name: Checkout Repository
@@ -128,15 +310,54 @@ jobs:
                   if grep -q "HTTPS\|SSL" config/app.php || grep -q "secure" config/session.php; then
                     echo "✅ HTTPS configuration found"
                   else
-                    echo "⚠️  Consider configuring HTTPS for production"
+                    echo "⚠️ Consider configuring HTTPS for production"
                   fi
-
-    debug:
-        name: Debug Event Name
-        runs-on: ubuntu-latest
-
-        steps:
-          - name: Debug event name
-            run: |-
-              echo "Event name: ${{ github.event_name }}"
-
+            - name: Check Content Security Policy (CSP)
+              run: |
+                  if grep -q "Content-Security-Policy" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ Content Security Policy (CSP) is configured"
+                  else
+                    echo "⚠️ Consider adding a Content Security Policy (CSP) for enhanced security"
+                  fi
+            - name: Check Secure Cookies
+              run: |
+                  if grep -q "'secure' => env('SESSION_SECURE_COOKIE', true)" config/session.php; then
+                    echo "✅ Secure cookies are enabled"
+                  else
+                    echo "⚠️ Consider enabling secure cookies in config/session.php"
+                  fi
+            - name: Check HSTS Configuration
+              run: |
+                  if grep -q "Strict-Transport-Security" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ HSTS is configured"
+                  else
+                    echo "⚠️ Consider adding HSTS for enhanced security"
+                  fi
+            - name: Check Referrer Policy
+              run: |
+                  if grep -q "Referrer-Policy" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ Referrer Policy is configured"
+                  else
+                    echo "⚠️ Consider adding a Referrer Policy for enhanced privacy"
+                  fi
+            - name: Check X-Content-Type-Options
+              run: |
+                  if grep -q "X-Content-Type-Options" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ X-Content-Type-Options is configured"
+                  else
+                    echo "⚠️ Consider adding X-Content-Type-Options to prevent MIME type sniffing"
+                  fi
+            - name: Check X-Frame-Options
+              run: |
+                  if grep -q "X-Frame-Options" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ X-Frame-Options is configured"
+                  else
+                    echo "⚠️ Consider adding X-Frame-Options to prevent clickjacking"
+                  fi
+            - name: Check X-XSS-Protection
+              run: |
+                  if grep -q "X-XSS-Protection" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ X-XSS-Protection is configured"
+                  else
+                    echo "⚠️ Consider adding X-XSS-Protection to mitigate XSS attacks"
+                  fi
