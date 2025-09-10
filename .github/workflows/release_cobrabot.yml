@@ -191,14 +191,6 @@ jobs:
                     --name "$APP" --resource-group "$RG" \
                     --settings PHP_VERSION=8.4
 
-            # Enable Always On to prevent cold starts
-            - name: Enable Always On to prevent cold starts
-              run: |
-                  az webapp config set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --always-on true
-
             - name: Set health check path using generic configurations
               run: |
                   az webapp config set \
