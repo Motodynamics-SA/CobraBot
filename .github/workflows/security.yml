@@ -138,7 +138,7 @@ jobs:
                   fi
             - name: Check Secure Cookies
               run: |
-                  if grep -q "'secure' => true" config/session.php; then
+                  if grep -q "'secure' => env('SESSION_SECURE_COOKIE', true)" config/session.php; then
                     echo "✅ Secure cookies are enabled"
                   else
                     echo "⚠️ Consider enabling secure cookies in config/session.php"
