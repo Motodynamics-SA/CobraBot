@@ -193,10 +193,20 @@ jobs:
 
             - name: Set health check path using generic configurations
               run: |
-                  az webapp config set \
-                    --name "$APP" \
-                    --resource-group "$RG" \
-                    --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}' || true
+                  echo "Checking current configuration..."
+                  CURRENT_CONFIG=$(az webapp config show --name "$APP" --resource-group "$RG" --query '{alwaysOn: alwaysOn, healthCheckPath: healthCheckPath}' -o json || echo '{}')
+                  echo "Current config: $CURRENT_CONFIG"
+
+                  # Only update if configuration differs
+                  if ! echo "$CURRENT_CONFIG" | grep -q '"alwaysOn": true' || ! echo "$CURRENT_CONFIG" | grep -q '"/health"'; then
+                    echo "Updating configuration..."
+                    az webapp config set \
+                      --name "$APP" \
+                      --resource-group "$RG" \
+                      --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}' || true
+                  else
+                    echo "Configuration already correct, skipping update"
+                  fi
 
             - name: Set port 8080
               run: |
