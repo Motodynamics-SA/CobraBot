@@ -152,7 +152,7 @@ jobs:
         name: CodeQL Analysis
         runs-on: ubuntu-latest
         needs: [check-advanced-security, essential-security]
-        if: needs.essential-security.outputs.secrets-clean == 'true'
+        if: needs.essential-security.outputs.secrets-clean == 'true' && needs.check-advanced-security.outputs.ghas-enabled == 'true'
 
         permissions:
             contents: read
