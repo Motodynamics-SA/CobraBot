@@ -185,8 +185,8 @@ jobs:
                   # Install license-checker
                   npm install -g license-checker
 
-                  # Check licenses
-                  license-checker --onlyAllow 'MIT;Apache-2.0;BSD;ISC;CC0-1.0;Unlicense;WTFPL' --production
+                  # Check licenses (including common font licenses)
+                  license-checker --onlyAllow 'MIT;Apache-2.0;BSD;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;WTFPL;OFL-1.1;SIL OFL 1.1' --production
 
     owasp-dependency-check:
         name: OWASP Dependency Check
