@@ -20,10 +20,37 @@ permissions:
     actions: read
 
 jobs:
+    # Check GitHub Advanced Security availability
+    check-advanced-security:
+        name: Check Advanced Security
+        runs-on: ubuntu-latest
+        outputs:
+            ghas-enabled: ${{ steps.check-ghas.outputs.enabled }}
+
+        steps:
+            - name: Check GitHub Advanced Security Status
+              id: check-ghas
+              run: |
+                  echo "🔍 Checking GitHub Advanced Security status..."
+                  GHAS_STATUS=$(gh api repos/${{ github.repository }} --jq '.security_and_analysis.advanced_security.status // "disabled"')
+                  echo "Advanced Security status: $GHAS_STATUS"
+
+                  if [ "$GHAS_STATUS" = "enabled" ]; then
+                    echo "✅ GitHub Advanced Security is enabled"
+                    echo "enabled=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "⚠️ GitHub Advanced Security is not enabled"
+                    echo "CodeQL and dependency review will be skipped"
+                    echo "enabled=false" >> "$GITHUB_OUTPUT"
+                  fi
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     # Basic security checks that must pass before other jobs
     essential-security:
         name: Essential Security Checks
         runs-on: ubuntu-latest
+        needs: check-advanced-security
         outputs:
             secrets-clean: ${{ steps.secrets-check.outputs.clean }}
             env-files-clean: ${{ steps.env-check.outputs.clean }}
@@ -119,6 +146,80 @@ jobs:
                   echo "clean=true" >> "$GITHUB_OUTPUT"
 
             # Note: SARIF upload disabled - requires GitHub Advanced Security
+
+    # CodeQL Analysis - only runs if GitHub Advanced Security is enabled
+    codeql-analysis:
+        name: CodeQL Analysis
+        runs-on: ubuntu-latest
+        needs: [check-advanced-security, essential-security]
+        if: needs.check-advanced-security.outputs.ghas-enabled == 'true' && needs.essential-security.outputs.secrets-clean == 'true'
+
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+
+        strategy:
+            fail-fast: false
+            matrix:
+                language: [php, javascript]
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Initialize CodeQL
+              uses: github/codeql-action/init@v3
+              with:
+                  languages: ${{ matrix.language }}
+
+            - name: Setup PHP (for PHP analysis)
+              if: matrix.language == 'php'
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  tools: composer:v2
+
+            - name: Setup Node (for JavaScript analysis)
+              if: matrix.language == 'javascript'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+
+            - name: Install PHP Dependencies
+              if: matrix.language == 'php'
+              run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+            - name: Install Node Dependencies
+              if: matrix.language == 'javascript'
+              run: npm ci
+
+            - name: Perform CodeQL Analysis
+              uses: github/codeql-action/analyze@v3
+
+    # Dependency Review - only runs if GitHub Advanced Security is enabled
+    dependency-review:
+        name: Dependency Review
+        runs-on: ubuntu-latest
+        needs: [check-advanced-security, essential-security]
+        if: needs.check-advanced-security.outputs.ghas-enabled == 'true' && needs.essential-security.outputs.secrets-clean == 'true' && github.event_name == 'pull_request'
+
+        permissions:
+            contents: read
+            pull-requests: read
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Run Dependency Review
+              uses: actions/dependency-review-action@v4
+              with:
+                  # Fail on high and critical vulnerabilities
+                  fail-on-severity: high
+                  # Allow licenses compatible with commercial use
+                  allow-licenses: 'MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, CC0-1.0'
 
     license-compliance:
         name: License Compliance Check
