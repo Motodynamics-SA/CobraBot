@@ -206,7 +206,6 @@ jobs:
                     --resource-group "$RG" \
                     --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}'
 
-
             - name: Set port 8080
               run: |
                   az webapp config appsettings set \

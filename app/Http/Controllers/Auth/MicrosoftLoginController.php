@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\RolesEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,12 @@ class MicrosoftLoginController extends Controller {
             'provider_id' => $microsoftUser->getId(),
             'provider' => 'microsoft',
         ]);
+
+        // assign the user manager role to the user
+        // if it is the first time the user logs in
+        if ($user->roles->isEmpty()) {
+            $user->assignRole(RolesEnum::USER_MANAGER->value);
+        }
 
         Auth::login($user);
 

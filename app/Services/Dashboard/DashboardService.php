@@ -45,7 +45,7 @@ class DashboardService {
      * @return array<string, int>
      */
     private function getUsersByRole(): array {
-        return collect(RolesEnum::cases())->mapWithKeys(fn (RolesEnum $rolesEnum) => [
+        return collect(RolesEnum::cases())->mapWithKeys(fn (RolesEnum $rolesEnum): array => [
             $rolesEnum->value => User::role($rolesEnum->value)->count(),
         ])->toArray();
     }
