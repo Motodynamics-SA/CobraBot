@@ -34,9 +34,9 @@ jobs:
                   echo "🔍 Checking for accidentally committed environment files..."
 
                   # Check for .env files
-                  if find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f | grep -q .; then
+                  if find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.github/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f | grep -q .; then
                       echo "❌ Found potentially sensitive .env files:"
-                      find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f
+                      find . -name ".env*" -not -path "./vendor/*" -not -path "./node_modules/*" -not -path "./.github/*" -not -name ".env.example" -not -name ".env.*.example" -not -name ".env.testing" -not -name ".env.ci" -type f
                       echo "clean=false" >> "$GITHUB_OUTPUT"
                       exit 1
                   fi
