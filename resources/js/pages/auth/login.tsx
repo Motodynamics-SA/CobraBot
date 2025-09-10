@@ -98,7 +98,6 @@ export default function Login({ status, canResetPassword, token, redirectTo }: L
 					<div className="flex flex-col gap-6">
 						<a href={route('login.microsoft')}>
 							<Button
-								disabled
 								className="w-full border-2 border-gray-200 px-4 py-5 text-lg hover:border-gray-300"
 								variant="secondary"
 							>
