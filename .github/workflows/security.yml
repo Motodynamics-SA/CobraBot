@@ -107,7 +107,6 @@ jobs:
     security-headers:
         name: Security Headers Check
         runs-on: ubuntu-latest
-        if: github.event_name == 'pull_request'
 
         steps:
             - name: Checkout Repository
@@ -128,15 +127,27 @@ jobs:
                   if grep -q "HTTPS\|SSL" config/app.php || grep -q "secure" config/session.php; then
                     echo "✅ HTTPS configuration found"
                   else
-                    echo "⚠️  Consider configuring HTTPS for production"
+                    echo "⚠️ Consider configuring HTTPS for production"
                   fi
-
-    debug:
-        name: Debug Event Name
-        runs-on: ubuntu-latest
-
-        steps:
-          - name: Debug event name
-            run: |-
-              echo "Event name: ${{ github.event_name }}"
+            - name: Check Content Security Policy (CSP)
+              run: |
+                  if grep -q "Content-Security-Policy" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ Content Security Policy (CSP) is configured"
+                  else
+                    echo "⚠️ Consider adding a Content Security Policy (CSP) for enhanced security"
+                  fi
+            - name: Check Secure Cookies
+              run: |
+                  if grep -q "'secure' => true" config/session.php; then
+                    echo "✅ Secure cookies are enabled"
+                  else
+                    echo "⚠️ Consider enabling secure cookies in config/session.php"
+                  fi
+            - name: Check HSTS Configuration
+              run: |
+                  if grep -q "Strict-Transport-Security" app/Http/Middleware/AddSecurityHeaders.php; then
+                    echo "✅ HSTS is configured"
+                  else
+                    echo "⚠️ Consider adding HSTS for enhanced security"
+                  fi
 
