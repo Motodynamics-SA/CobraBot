@@ -112,7 +112,7 @@ jobs:
                   echo "clean=true" >> "$GITHUB_OUTPUT"
 
             - name: Upload Gitleaks SARIF to GitHub Security
-              if: always()
+              if: always() && hashFiles('gitleaks.sarif') != ''
               uses: github/codeql-action/upload-sarif@v3
               with:
                   sarif_file: gitleaks.sarif
