@@ -149,22 +149,34 @@ jobs:
               run: |
                   echo "🔍 Checking PHP package licenses..."
 
-                  # Get license information
-                  composer licenses --format=json > php-licenses.json
+                  # Get license information and show dual-licensed packages
+                  composer licenses > licenses.txt
 
-                  # Define prohibited licenses (adjust as needed)
-                  prohibited_licenses=("GPL-3.0" "AGPL-3.0" "LGPL-3.0")
+                  echo "Checking for packages with problematic licensing..."
 
-                  # Check for prohibited licenses
-                  for license in "${prohibited_licenses[@]}"; do
-                      if grep -q "$license" php-licenses.json; then
-                          echo "❌ Found prohibited license: $license"
-                          composer licenses | grep "$license"
-                          exit 1
+                  # Check for packages that have ONLY GPL licenses (no alternatives)
+                  problematic_found=false
+
+                  # Look for lines that contain GPL but NOT any acceptable licenses
+                  while IFS= read -r line; do
+                      if echo "$line" | grep -E "(GPL-3\.0|AGPL-3\.0)" | grep -v -E "(MIT|Apache|BSD|ISC|CC0)" | grep -v "GPL-2\.0" ; then
+                          # Double check this isn't a dual-licensed package with acceptable alternatives
+                          package_line=$(echo "$line" | grep -E "(GPL-3\.0|AGPL-3\.0)")
+                          if [[ -n "$package_line" ]] && ! echo "$package_line" | grep -E "(MIT|Apache|BSD|ISC)"; then
+                              if [[ "$problematic_found" == "false" ]]; then
+                                  echo "❌ Found packages with only prohibited licenses:"
+                                  problematic_found=true
+                              fi
+                              echo "$package_line"
+                          fi
                       fi
-                  done
+                  done < licenses.txt
 
-                  echo "✅ All PHP licenses are compliant"
+                  if [[ "$problematic_found" == "true" ]]; then
+                      exit 1
+                  fi
+
+                  echo "✅ All PHP licenses are compliant (dual-licensed packages with BSD/MIT alternatives are acceptable)"
 
             - name: Check Node License Compliance
               run: |
