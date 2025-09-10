@@ -194,34 +194,33 @@ jobs:
             - name: Ensure health check path
               shell: bash
               run: |
-                APP_ID=$(az webapp show -g "$RG" -n "$APP" ${SLOT:+--slot "$SLOT"} --query id -o tsv)
-                CURRENT=$(az webapp show --ids "$APP_ID" --query "siteConfig.healthCheckPath" -o tsv)
-                if [ "$CURRENT" != "/health" ]; then
-                  echo "Setting healthCheckPath to /health (was: ${CURRENT:-<empty>})"
-                  az webapp update --ids "$APP_ID" --set siteConfig.healthCheckPath="/health"
-                else
-                  echo "healthCheckPath already /health; skipping"
-                fi
+                  APP_ID=$(az webapp show -g "$RG" -n "$APP" ${SLOT:+--slot "$SLOT"} --query id -o tsv)
+                  CURRENT=$(az webapp show --ids "$APP_ID" --query "siteConfig.healthCheckPath" -o tsv)
+                  if [ "$CURRENT" != "/health" ]; then
+                    echo "Setting healthCheckPath to /health (was: ${CURRENT:-<empty>})"
+                    az webapp update --ids "$APP_ID" --set siteConfig.healthCheckPath="/health"
+                  else
+                    echo "healthCheckPath already /health; skipping"
+                  fi
 
             - name: Enable Always On when supported
               shell: bash
               run: |
-                APP_INFO=$(az webapp show -g "$RG" -n "$APP" ${SLOT:+--slot "$SLOT"})
-                APP_ID=$(jq -r '.id' <<<"$APP_INFO")
-                PLAN_ID=$(jq -r '.serverFarmId' <<<"$APP_INFO")
-                PLAN_TIER=$(az appservice plan show --ids "$PLAN_ID" --query "sku.tier" -o tsv)
+                  APP_INFO=$(az webapp show -g "$RG" -n "$APP" ${SLOT:+--slot "$SLOT"})
+                  APP_ID=$(jq -r '.id' <<<"$APP_INFO")
+                  PLAN_ID=$(jq -r '.serverFarmId' <<<"$APP_INFO")
+                  PLAN_TIER=$(az appservice plan show --ids "$PLAN_ID" --query "sku.tier" -o tsv)
 
-                echo "App Service Plan tier: $PLAN_TIER"
-                case "$PLAN_TIER" in
-                  Basic|Standard|Premium|PremiumV2|PremiumV3|PremiumV4|Isolated|IsolatedV2)
-                    echo "Enabling Always On"
-                    az webapp config set --ids "$APP_ID" --always-on true
-                    ;;
-                  *)
-                    echo "Skipping Always On (not supported on '$PLAN_TIER')."
-                    ;;
-                esac
-
+                  echo "App Service Plan tier: $PLAN_TIER"
+                  case "$PLAN_TIER" in
+                    Basic|Standard|Premium|PremiumV2|PremiumV3|PremiumV4|Isolated|IsolatedV2)
+                      echo "Enabling Always On"
+                      az webapp config set --ids "$APP_ID" --always-on true
+                      ;;
+                    *)
+                      echo "Skipping Always On (not supported on '$PLAN_TIER')."
+                      ;;
+                  esac
 
             - name: Set port 8080
               run: |
