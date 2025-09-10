@@ -197,8 +197,8 @@ jobs:
                   CURRENT_CONFIG=$(az webapp config show --name "$APP" --resource-group "$RG" --query '{alwaysOn: alwaysOn, healthCheckPath: healthCheckPath}' -o json || echo '{}')
                   echo "Current config: $CURRENT_CONFIG"
 
-                  # Only update if configuration differs
-                  if ! echo "$CURRENT_CONFIG" | grep -q '"healthCheckPath": "/health"'; then
+                  # Only update if configuration differs (check both alwaysOn and healthCheckPath)
+                  if ! echo "$CURRENT_CONFIG" | grep -q '"alwaysOn": true' || ! echo "$CURRENT_CONFIG" | grep -q '"healthCheckPath": "/health"'; then
                     echo "Updating configuration..."
                     az webapp config set \
                       --name "$APP" \
