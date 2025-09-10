@@ -31,7 +31,7 @@ jobs:
             - name: Check GitHub Advanced Security Status
               id: check-ghas
               run: |
-                  echo "🔍 Checking the GitHub Advanced Security status..."
+                  echo "🔍 Checking GitHub Advanced Security status..."
                   GHAS_STATUS=$(gh api repos/${{ github.repository }} --jq '.security_and_analysis.advanced_security.status // "disabled"')
                   echo "Advanced Security status: $GHAS_STATUS"
 
@@ -162,7 +162,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                language: [php, javascript]
+                language: [javascript]
 
         steps:
             - name: Checkout Repository
@@ -173,23 +173,12 @@ jobs:
               with:
                   languages: ${{ matrix.language }}
 
-            - name: Setup PHP (for PHP analysis)
-              if: matrix.language == 'php'
-              uses: shivammathur/setup-php@v2
-              with:
-                  php-version: 8.4
-                  tools: composer:v2
-
             - name: Setup Node (for JavaScript analysis)
               if: matrix.language == 'javascript'
               uses: actions/setup-node@v4
               with:
                   node-version: '22'
                   cache: 'npm'
-
-            - name: Install PHP Dependencies
-              if: matrix.language == 'php'
-              run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
             - name: Install Node Dependencies
               if: matrix.language == 'javascript'
