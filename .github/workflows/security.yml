@@ -130,3 +130,13 @@ jobs:
                   else
                     echo "⚠️  Consider configuring HTTPS for production"
                   fi
+
+    debug:
+        name: Debug Event Name
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Debug event name
+            run: |-
+              echo "Event name: ${{ github.event_name }}"
+

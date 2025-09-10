@@ -191,12 +191,20 @@ jobs:
                     --name "$APP" --resource-group "$RG" \
                     --settings PHP_VERSION=8.4
 
+            # Enable Always On to prevent cold starts
+            - name: Enable Always On to prevent cold starts
+              run: |
+                  az webapp config set \
+                    --name "$APP" \
+                    --resource-group "$RG" \
+                    --always-on true || true
+
             - name: Set health check path using generic configurations
               run: |
                   az webapp config set \
                     --name "$APP" \
                     --resource-group "$RG" \
-                    --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}'
+                    --generic-configurations '{"alwaysOn": true, "healthCheckPath": "/health"}' || true
 
             - name: Set port 8080
               run: |
