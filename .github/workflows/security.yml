@@ -31,7 +31,7 @@ jobs:
             - name: Check GitHub Advanced Security Status
               id: check-ghas
               run: |
-                  echo "🔍 Checking GitHub Advanced Security status..."
+                  echo "🔍 Checking the GitHub Advanced Security status..."
                   GHAS_STATUS=$(gh api repos/${{ github.repository }} --jq '.security_and_analysis.advanced_security.status // "disabled"')
                   echo "Advanced Security status: $GHAS_STATUS"
 
@@ -152,7 +152,7 @@ jobs:
         name: CodeQL Analysis
         runs-on: ubuntu-latest
         needs: [check-advanced-security, essential-security]
-        if: needs.check-advanced-security.outputs.ghas-enabled == 'true' && needs.essential-security.outputs.secrets-clean == 'true'
+        if: needs.essential-security.outputs.secrets-clean == 'true'
 
         permissions:
             contents: read
@@ -203,7 +203,7 @@ jobs:
         name: Dependency Review
         runs-on: ubuntu-latest
         needs: [check-advanced-security, essential-security]
-        if: needs.check-advanced-security.outputs.ghas-enabled == 'true' && needs.essential-security.outputs.secrets-clean == 'true' && github.event_name == 'pull_request'
+        if: needs.essential-security.outputs.secrets-clean == 'true' && github.event_name == 'pull_request'
 
         permissions:
             contents: read
