@@ -198,7 +198,7 @@ jobs:
                   echo "Current config: $CURRENT_CONFIG"
 
                   # Only update if configuration differs
-                  if ! echo "$CURRENT_CONFIG" | grep -q '"alwaysOn": true' || ! echo "$CURRENT_CONFIG" | grep -q '"/health"'; then
+                  if ! echo "$CURRENT_CONFIG" | grep -q '"healthCheckPath": "/health"'; then
                     echo "Updating configuration..."
                     az webapp config set \
                       --name "$APP" \
