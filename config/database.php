@@ -114,6 +114,18 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'sqlsrv_noprefix' => [
+            'driver' => 'sqlsrv',
+            'host' => env('DB_HOST'),
+            'port' => env('DB_PORT', '1433'),
+            'database' => env('DB_DATABASE'),
+            'username' => env('DB_USERNAME'),
+            'password' => env('DB_PASSWORD'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            // ...same options as above...
+        ],
+
     ],
 
     /*
@@ -128,7 +140,8 @@ return [
     */
 
     'migrations' => [
-        'table' => 'migrations',
+        'table' => 'cobrabot.migrations',   // fully qualified so it's explicit
+        'connection' => 'sqlsrv_noprefix',  // ← use the no-prefix connection for the repo
         'update_date_on_publish' => true,
     ],
 
