@@ -9,7 +9,11 @@ use App\Models\User;
 use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\DatabaseMigrationRepository;
+use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +33,29 @@ class AppServiceProvider extends ServiceProvider {
     protected array $policies = [
         User::class => UserPolicy::class,
     ];
+
+    public function register(): void {
+        $this->app->bind(MigrationRepositoryInterface::class, function (Application $application): DatabaseMigrationRepository {
+            /** @var DatabaseManager $databaseManager */
+            $databaseManager = $application->make(DatabaseManager::class);
+            $default = $application->make('config')->get('database.default');
+
+            // Decide which table + connection the migrations repo should use
+            if ($default === 'sqlsrv') {
+                // Azure SQL: migrations live in cobrabot schema, and we want NO prefix
+                $repo = new DatabaseMigrationRepository($databaseManager, 'cobrabot.migrations');
+                $repo->setSource('sqlsrv_noprefix'); // use the no-prefix connection name
+
+                return $repo;
+            }
+
+            // Dev/CI/etc.: use plain table on the default connection
+            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
+            $repo->setSource($default); // make it explicit for clarity
+
+            return $repo;
+        });
+    }
 
     /**
      * Bootstrap any application services.
