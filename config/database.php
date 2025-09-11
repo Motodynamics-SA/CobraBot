@@ -142,7 +142,7 @@ return [
     */
 
     'migrations' => [
-        'table' => env('APP_ENV') === 'production' ? 'cobrabot.migrations' : 'migrations',
+        'table' => 'migrations',
         'update_date_on_publish' => true,
     ],
 
