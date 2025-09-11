@@ -140,8 +140,8 @@ return [
     */
 
     'migrations' => [
-        'table' => 'cobrabot.migrations',   // fully qualified so it's explicit
-        'connection' => 'sqlsrv_noprefix',  // ← use the no-prefix connection for the repo
+        'table' => env('APP_ENV') === 'production' ? 'cobrabot.migrations' : 'migrations',
+        'connection' => env('APP_ENV') === 'production' ? 'sqlsrv_noprefix' : null,
         'update_date_on_publish' => true,
     ],
 
