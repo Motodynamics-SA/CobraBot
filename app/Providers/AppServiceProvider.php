@@ -10,6 +10,8 @@ use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\DatabaseMigrationRepository;
+use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +31,22 @@ class AppServiceProvider extends ServiceProvider {
     protected array $policies = [
         User::class => UserPolicy::class,
     ];
+
+    public function register(): void {
+        $this->app->bind(MigrationRepositoryInterface::class, function (array $app): DatabaseMigrationRepository {
+            if ($app->environment('production')) {
+                // Production: Azure SQL, schema-qualified table
+                $connection = $app['db']->connection('sqlsrv_noprefix');
+
+                return new DatabaseMigrationRepository($connection, 'cobrabot.migrations');
+            }
+
+            // Non-production (local dev, CI, etc.): use default connection + plain table
+            $connection = $app['db']->connection(); // uses config('database.default')
+
+            return new DatabaseMigrationRepository($connection, 'migrations');
+        });
+    }
 
     /**
      * Bootstrap any application services.

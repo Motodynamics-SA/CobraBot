@@ -143,7 +143,6 @@ return [
 
     'migrations' => [
         'table' => env('APP_ENV') === 'production' ? 'cobrabot.migrations' : 'migrations',
-        'connection' => env('APP_ENV') === 'production' ? 'sqlsrv_noprefix' : null,
         'update_date_on_publish' => true,
     ],
 
