@@ -41,8 +41,10 @@ class AppServiceProvider extends ServiceProvider {
             $default = (string) $application->make('config')->get('database.default', 'mysql');
 
             if ($default === 'sqlsrv') {
-                // Azure SQL: use no-prefix connection + schema-qualified table
-                $repo = new DatabaseMigrationRepository($databaseManager, 'cobrabot.migrations');
+                // IMPORTANT:
+                //   - use NO-PREFIX connection
+                //   - use UNQUALIFIED table name to avoid double "cobrabot."
+                $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
                 $repo->setSource('sqlsrv_noprefix');
 
                 return $repo;
@@ -55,7 +57,7 @@ class AppServiceProvider extends ServiceProvider {
             return $repo;
         };
 
-        // IMPORTANT: extend the existing bindings instead of bind()
+        // Use extend() so we truly override Laravel's default binding
         $this->app->extend(MigrationRepositoryInterface::class, fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
 
         $this->app->extend('migration.repository', fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
