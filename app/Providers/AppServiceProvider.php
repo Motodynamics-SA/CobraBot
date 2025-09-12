@@ -41,23 +41,24 @@ class AppServiceProvider extends ServiceProvider {
             $default = (string) $application->make('config')->get('database.default', 'mysql');
 
             if ($default === 'sqlsrv') {
-                // Azure SQL: use no-prefix conn + schema-qualified table
+                // Azure SQL: use no-prefix connection + schema-qualified table
                 $repo = new DatabaseMigrationRepository($databaseManager, 'cobrabot.migrations');
                 $repo->setSource('sqlsrv_noprefix');
 
                 return $repo;
             }
 
-            // Dev/CI/other drivers: plain table on default connection
+            // Dev/CI/etc.
             $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
             $repo->setSource($default);
 
             return $repo;
         };
 
-        // Bind BOTH keys so Artisan always resolves our repo
-        $this->app->bind(MigrationRepositoryInterface::class, $makeRepo);
-        $this->app->bind('migration.repository', $makeRepo);
+        // IMPORTANT: extend the existing bindings instead of bind()
+        $this->app->extend(MigrationRepositoryInterface::class, fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
+
+        $this->app->extend('migration.repository', fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
     }
 
     /**
