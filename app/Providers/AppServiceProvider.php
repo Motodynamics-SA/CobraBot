@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Database\Migrations\SqlServerSchemaAwareMigrationRepository;
 use App\Enums\RolesEnum;
 use App\Models\User;
 use App\Policies\UserPolicy;
@@ -12,7 +13,6 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Migrations\DatabaseMigrationRepository;
 use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -35,32 +35,31 @@ class AppServiceProvider extends ServiceProvider {
     ];
 
     public function register(): void {
-        $makeRepo = function (Application $application): DatabaseMigrationRepository {
+        $factory = function (Application $application): \App\Database\Migrations\SqlServerSchemaAwareMigrationRepository {
             /** @var DatabaseManager $databaseManager */
             $databaseManager = $application->make(DatabaseManager::class);
             $default = (string) $application->make('config')->get('database.default', 'mysql');
 
             if ($default === 'sqlsrv') {
-                // IMPORTANT:
-                //   - use NO-PREFIX connection
-                //   - use UNQUALIFIED table name to avoid double "cobrabot."
-                $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
+                // Use the NO-PREFIX connection for the repo,
+                // but explicitly point to the schema-qualified table that already exists.
+                $repo = new SqlServerSchemaAwareMigrationRepository($databaseManager, 'cobrabot.migrations');
                 $repo->setSource('sqlsrv_noprefix');
 
                 return $repo;
             }
 
-            // Dev/CI/etc.
-            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
+            // Non-SQLSRV environments: keep defaults
+            $repo = new SqlServerSchemaAwareMigrationRepository($databaseManager, 'migrations');
             $repo->setSource($default);
 
             return $repo;
         };
 
-        // Use extend() so we truly override Laravel's default binding
-        $this->app->extend(MigrationRepositoryInterface::class, fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
+        // Override both bindings Laravel uses
+        $this->app->extend(MigrationRepositoryInterface::class, fn ($_, Application $application): SqlServerSchemaAwareMigrationRepository => $factory($application));
 
-        $this->app->extend('migration.repository', fn ($_, Application $application): DatabaseMigrationRepository => $makeRepo($application));
+        $this->app->extend('migration.repository', fn ($_, Application $application): SqlServerSchemaAwareMigrationRepository => $factory($application));
     }
 
     /**
