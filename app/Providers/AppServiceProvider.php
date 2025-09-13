@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Database\Migrations\SqlServerSchemaAwareMigrationRepository;
 use App\Enums\RolesEnum;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +20,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\Provider;
 
@@ -34,33 +32,7 @@ class AppServiceProvider extends ServiceProvider {
         User::class => UserPolicy::class,
     ];
 
-    public function register(): void {
-        $factory = function (Application $application): \App\Database\Migrations\SqlServerSchemaAwareMigrationRepository {
-            /** @var DatabaseManager $databaseManager */
-            $databaseManager = $application->make(DatabaseManager::class);
-            $default = (string) $application->make('config')->get('database.default', 'mysql');
-
-            if ($default === 'sqlsrv') {
-                // Use the NO-PREFIX connection for the repo,
-                // but explicitly point to the schema-qualified table that already exists.
-                $repo = new SqlServerSchemaAwareMigrationRepository($databaseManager, 'cobrabot.migrations');
-                $repo->setSource('sqlsrv_noprefix');
-
-                return $repo;
-            }
-
-            // Non-SQLSRV environments: keep defaults
-            $repo = new SqlServerSchemaAwareMigrationRepository($databaseManager, 'migrations');
-            $repo->setSource($default);
-
-            return $repo;
-        };
-
-        // Override both bindings Laravel uses
-        $this->app->extend(MigrationRepositoryInterface::class, fn ($_, Application $application): SqlServerSchemaAwareMigrationRepository => $factory($application));
-
-        $this->app->extend('migration.repository', fn ($_, Application $application): SqlServerSchemaAwareMigrationRepository => $factory($application));
-    }
+    public function register(): void {}
 
     /**
      * Bootstrap any application services.
@@ -126,6 +98,21 @@ class AppServiceProvider extends ServiceProvider {
         });
 
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
+
+        if ($this->app->runningInConsole()) {
+            $argv = implode(' ', $_SERVER['argv'] ?? []);
+
+            if (Str::contains($argv, [
+                'migrate', 'migrate:fresh', 'migrate:refresh',
+                'migrate:install', 'migrate:reset', 'migrate:rollback', 'db:seed',
+            ]) && config('database.default') === 'sqlsrv') {
+                // Use NO-PREFIX connection for migration commands
+                config([
+                    'database.default' => 'sqlsrv_noprefix',
+                    'database.migrations.table' => 'cobrabot.migrations',
+                ]);
+            }
+        }
     }
 
     protected function configureSecureUrls(): void {
