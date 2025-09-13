@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Database\Migrations\PrefixedSqlServerMigrationRepository;
 use App\Enums\RolesEnum;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +35,46 @@ class AppServiceProvider extends ServiceProvider {
         User::class => UserPolicy::class,
     ];
 
-    public function register(): void {}
+    public function register(): void {
+        $this->app->extend(MigrationRepositoryInterface::class, function ($_, Application $application): \App\Database\Migrations\PrefixedSqlServerMigrationRepository {
+            /** @var DatabaseManager $databaseManager */
+            $databaseManager = $application->make(DatabaseManager::class);
+            $default = (string) $application->make('config')->get('database.default', 'mysql');
+
+            if ($default === 'sqlsrv') {
+                // Use the *prefixed* sqlsrv connection; keep table UNqualified so prefix applies.
+                $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+                $repo->setSource('sqlsrv');
+
+                return $repo;
+            }
+
+            // Non-SQLSRV envs use the default behavior
+            $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+            $repo->setSource($default);
+
+            return $repo;
+        });
+
+        // Also override the string alias Laravel sometimes resolves
+        $this->app->extend('migration.repository', function ($_, Application $application): \App\Database\Migrations\PrefixedSqlServerMigrationRepository {
+            /** @var DatabaseManager $databaseManager */
+            $databaseManager = $application->make(DatabaseManager::class);
+            $default = (string) $application->make('config')->get('database.default', 'mysql');
+
+            if ($default === 'sqlsrv') {
+                $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+                $repo->setSource('sqlsrv');
+
+                return $repo;
+            }
+
+            $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+            $repo->setSource($default);
+
+            return $repo;
+        });
+    }
 
     /**
      * Bootstrap any application services.
