@@ -101,10 +101,6 @@ class AppServiceProvider extends ServiceProvider {
         });
 
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
-
-        \Illuminate\Database\Eloquent\Model::unguard();
-        \Illuminate\Database\Eloquent\Model::setTablePrefix('cobrabot.');
-        \Illuminate\Database\Eloquent\Model::reguard();
     }
 
     protected function configureSecureUrls(): void {
