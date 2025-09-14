@@ -13,6 +13,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\DatabaseMigrationRepository;
 use Illuminate\Database\Migrations\MigrationRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -23,7 +24,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\Provider;
 
@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider {
     ];
 
     public function register(): void {
-        $this->app->extend(MigrationRepositoryInterface::class, function ($_, Application $application): \App\Database\Migrations\PrefixedSqlServerMigrationRepository {
+        $this->app->extend(MigrationRepositoryInterface::class, function ($_, Application $application): PrefixedSqlServerMigrationRepository|DatabaseMigrationRepository {
             /** @var DatabaseManager $databaseManager */
             $databaseManager = $application->make(DatabaseManager::class);
             $default = (string) $application->make('config')->get('database.default', 'mysql');
@@ -50,14 +50,14 @@ class AppServiceProvider extends ServiceProvider {
             }
 
             // Non-SQLSRV envs use the default behavior
-            $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
             $repo->setSource($default);
 
             return $repo;
         });
 
         // Also override the string alias Laravel sometimes resolves
-        $this->app->extend('migration.repository', function ($_, Application $application): \App\Database\Migrations\PrefixedSqlServerMigrationRepository {
+        $this->app->extend('migration.repository', function ($_, Application $application): PrefixedSqlServerMigrationRepository|DatabaseMigrationRepository {
             /** @var DatabaseManager $databaseManager */
             $databaseManager = $application->make(DatabaseManager::class);
             $default = (string) $application->make('config')->get('database.default', 'mysql');
@@ -69,7 +69,7 @@ class AppServiceProvider extends ServiceProvider {
                 return $repo;
             }
 
-            $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
+            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
             $repo->setSource($default);
 
             return $repo;
@@ -140,21 +140,6 @@ class AppServiceProvider extends ServiceProvider {
         });
 
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
-
-        if ($this->app->runningInConsole()) {
-            $argv = implode(' ', $_SERVER['argv'] ?? []);
-
-            if (Str::contains($argv, [
-                'migrate', 'migrate:fresh', 'migrate:refresh',
-                'migrate:install', 'migrate:reset', 'migrate:rollback', 'db:seed',
-            ]) && config('database.default') === 'sqlsrv') {
-                // Use NO-PREFIX connection for migration commands
-                config([
-                    'database.default' => 'sqlsrv_noprefix',
-                    'database.migrations.table' => 'cobrabot.migrations',
-                ]);
-            }
-        }
     }
 
     protected function configureSecureUrls(): void {
