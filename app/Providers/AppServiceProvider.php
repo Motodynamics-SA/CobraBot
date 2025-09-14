@@ -35,60 +35,7 @@ class AppServiceProvider extends ServiceProvider {
         User::class => UserPolicy::class,
     ];
 
-    public function register(): void {
-
-        $getCliDatabase = static function (): ?string {
-            $argv = $_SERVER['argv'] ?? [];
-            foreach ($argv as $i => $arg) {
-                if (str_starts_with($arg, '--database=')) {
-                    return substr($arg, 11);
-                }
-                if (($arg === '--database' || $arg === '-d') && isset($argv[$i + 1])) {
-                    return $argv[$i + 1];
-                }
-            }
-            return null;
-        };
-        
-        $this->app->extend(MigrationRepositoryInterface::class, function ($_, Application $application): PrefixedSqlServerMigrationRepository|DatabaseMigrationRepository {
-            /** @var DatabaseManager $databaseManager */
-            $databaseManager = $application->make(DatabaseManager::class);
-            $default = $getCliDatabase() ?: (string) $application->make('config')->get('database.default', 'mysql');
-
-            if ($default === 'sqlsrv') {
-                // Use the *prefixed* sqlsrv connection; keep table UNqualified so prefix applies.
-                $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
-                $repo->setSource('sqlsrv');
-
-                return $repo;
-            }
-
-            // Non-SQLSRV envs use the default behavior
-            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
-            $repo->setSource($default);
-
-            return $repo;
-        });
-
-        // Also override the string alias Laravel sometimes resolves
-        $this->app->extend('migration.repository', function ($_, Application $application): PrefixedSqlServerMigrationRepository|DatabaseMigrationRepository {
-            /** @var DatabaseManager $databaseManager */
-            $databaseManager = $application->make(DatabaseManager::class);
-            $default = (string) $application->make('config')->get('database.default', 'mysql');
-
-            if ($default === 'sqlsrv') {
-                $repo = new PrefixedSqlServerMigrationRepository($databaseManager, 'migrations');
-                $repo->setSource('sqlsrv');
-
-                return $repo;
-            }
-
-            $repo = new DatabaseMigrationRepository($databaseManager, 'migrations');
-            $repo->setSource($default);
-
-            return $repo;
-        });
-    }
+    public function register(): void {}
 
     /**
      * Bootstrap any application services.
@@ -154,6 +101,8 @@ class AppServiceProvider extends ServiceProvider {
         });
 
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
+
+        \Illuminate\Database\Eloquent\Model::setTablePrefix('cobrabot.');
     }
 
     protected function configureSecureUrls(): void {
