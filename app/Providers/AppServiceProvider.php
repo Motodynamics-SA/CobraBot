@@ -36,10 +36,24 @@ class AppServiceProvider extends ServiceProvider {
     ];
 
     public function register(): void {
+
+        $getCliDatabase = static function (): ?string {
+            $argv = $_SERVER['argv'] ?? [];
+            foreach ($argv as $i => $arg) {
+                if (str_starts_with($arg, '--database=')) {
+                    return substr($arg, 11);
+                }
+                if (($arg === '--database' || $arg === '-d') && isset($argv[$i + 1])) {
+                    return $argv[$i + 1];
+                }
+            }
+            return null;
+        };
+        
         $this->app->extend(MigrationRepositoryInterface::class, function ($_, Application $application): PrefixedSqlServerMigrationRepository|DatabaseMigrationRepository {
             /** @var DatabaseManager $databaseManager */
             $databaseManager = $application->make(DatabaseManager::class);
-            $default = (string) $application->make('config')->get('database.default', 'mysql');
+            $default = $getCliDatabase() ?: (string) $application->make('config')->get('database.default', 'mysql');
 
             if ($default === 'sqlsrv') {
                 // Use the *prefixed* sqlsrv connection; keep table UNqualified so prefix applies.
