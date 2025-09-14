@@ -10,12 +10,19 @@ class MigrationServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->extend('migration.repository', function ($repository, $app) {
-            $table = $app['config']['database.migrations'];
+            // Get the migration table name correctly
+            $table = $app['config']->get('database.migrations', 'migrations');
             
-            return new DatabaseMigrationRepository(
-                $app['db'], 
-                'cobrabot.' . $table // Prepend the prefix manually
-            );
+            // If it's an array (new Laravel format), get the table name from it
+            if (is_array($table)) {
+                $table = $table['table'] ?? 'migrations';
+            }
+            
+            // Add prefix to migration table name
+            $prefix = $app['config']->get('database.connections.sqlsrv.prefix', '');
+            $prefixedTable = $prefix . $table;
+            
+            return new DatabaseMigrationRepository($app['db'], $prefixedTable);
         });
     }
 }
