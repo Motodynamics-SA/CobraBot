@@ -6,12 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     /**
+     * Get table name with schema prefix if using SQL Server
+     */
+    private function getTableName(string $tableName): string {
+        return config('database.default') === 'sqlsrv' ? "cobrabot.{$tableName}" : $tableName;
+    }
+
+    /**
      * Run the migrations.
      */
     public function up(): void {
         $teams = config('permission.teams');
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
+
+        // Apply schema prefix for SQL Server
+        if (config('database.default') === 'sqlsrv') {
+            $tableNames = array_map(function ($tableName) {
+                return strpos($tableName, 'cobrabot.') === 0 ? $tableName : "cobrabot.{$tableName}";
+            }, $tableNames);
+        }
         $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
         $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
 
@@ -130,6 +144,13 @@ return new class extends Migration {
      */
     public function down(): void {
         $tableNames = config('permission.table_names');
+
+        // Apply schema prefix for SQL Server
+        if (config('database.default') === 'sqlsrv') {
+            $tableNames = array_map(function ($tableName) {
+                return strpos($tableName, 'cobrabot.') === 0 ? $tableName : "cobrabot.{$tableName}";
+            }, $tableNames);
+        }
 
         if (empty($tableNames)) {
             throw new \Exception('Error: config/permission.php not found and defaults could not be merged. Please publish the package configuration before proceeding, or drop the tables manually.');

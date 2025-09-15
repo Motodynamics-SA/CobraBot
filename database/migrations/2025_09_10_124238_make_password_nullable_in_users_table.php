@@ -6,10 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     /**
+     * Get table name with schema prefix if using SQL Server
+     */
+    private function getTableName(string $tableName): string {
+        return config('database.default') === 'sqlsrv' ? "cobrabot.{$tableName}" : $tableName;
+    }
+
+    /**
      * Run the migrations.
      */
     public function up(): void {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table($this->getTableName('users'), function (Blueprint $table) {
             $table->string('password')->nullable()->change();
         });
     }
@@ -18,7 +25,7 @@ return new class extends Migration {
      * Reverse the migrations.
      */
     public function down(): void {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table($this->getTableName('users'), function (Blueprint $table) {
             $table->string('password')->nullable(false)->change();
         });
     }

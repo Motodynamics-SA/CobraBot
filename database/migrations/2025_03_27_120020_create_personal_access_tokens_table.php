@@ -6,10 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     /**
+     * Get table name with schema prefix if using SQL Server
+     */
+    private function getTableName(string $tableName): string {
+        return config('database.default') === 'sqlsrv' ? "cobrabot.{$tableName}" : $tableName;
+    }
+
+    /**
      * Run the migrations.
      */
     public function up(): void {
-        Schema::create('personal_access_tokens', function (Blueprint $table) {
+        Schema::create($this->getTableName('personal_access_tokens'), function (Blueprint $table) {
             $table->id();
             $table->morphs('tokenable');
             $table->string('name');
@@ -25,6 +32,6 @@ return new class extends Migration {
      * Reverse the migrations.
      */
     public function down(): void {
-        Schema::dropIfExists('personal_access_tokens');
+        Schema::dropIfExists($this->getTableName('personal_access_tokens'));
     }
 };
