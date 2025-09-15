@@ -127,7 +127,9 @@ return [
     */
 
     'migrations' => [
-        'table' => 'cobrabot.migrations',
+        'table' => env('DB_CONNECTION') === 'sqlsrv'
+            ? 'cobrabot.migrations'
+            : 'migrations',
         'update_date_on_publish' => true,
     ],
 
