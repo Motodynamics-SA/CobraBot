@@ -6,16 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     /**
+     * Get table name with schema prefix if using SQL Server
+     */
+    private function getTableName(string $tableName): string {
+        return config('database.default') === 'sqlsrv' ? "cobrabot.{$tableName}" : $tableName;
+    }
+
+    /**
      * Run the migrations.
      */
     public function up(): void {
-        Schema::create('cache', function (Blueprint $table) {
+        Schema::create($this->getTableName('cache'), function (Blueprint $table) {
             $table->string('key')->primary();
             $table->mediumText('value');
             $table->integer('expiration');
         });
 
-        Schema::create('cache_locks', function (Blueprint $table) {
+        Schema::create($this->getTableName('cache_locks'), function (Blueprint $table) {
             $table->string('key')->primary();
             $table->string('owner');
             $table->integer('expiration');
@@ -26,7 +33,7 @@ return new class extends Migration {
      * Reverse the migrations.
      */
     public function down(): void {
-        Schema::dropIfExists('cache');
-        Schema::dropIfExists('cache_locks');
+        Schema::dropIfExists($this->getTableName('cache'));
+        Schema::dropIfExists($this->getTableName('cache_locks'));
     }
 };

@@ -30,6 +30,18 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable {
     use HasApiTokens;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table;
+
+    public function __construct(array $attributes = []) {
+        parent::__construct($attributes);
+        $this->table = config('database.default') === 'sqlsrv' ? 'cobrabot.users' : 'users';
+    }
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
 
