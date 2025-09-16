@@ -4,7 +4,7 @@ export interface DataItem {
 	end: string;
 	yield: string;
 	yield_s: string;
-	price: string;
+	price?: string;
 	Lor: number;
 	Mlor: number;
 	peaks: Array<{
@@ -12,7 +12,7 @@ export interface DataItem {
 		end: string;
 		yield: string;
 		yield_s: string;
-		price: string;
+		price?: string;
 		Lor: number;
 		Mlor: number;
 	}>;
@@ -22,6 +22,18 @@ export interface ParsedData {
 	date: string;
 	location: string;
 	data: DataItem[];
+}
+
+export interface PriceData {
+	yielding_date: string;
+	car_group: string;
+	type: string;
+	start_date: string;
+	end_date: string;
+	yield: string;
+	yield_code: string;
+	price: string;
+	pool: string;
 }
 
 export interface SteeringRecord {
@@ -59,6 +71,11 @@ export interface PublishResponse {
 	message?: string;
 	response?: unknown;
 	error?: string;
+	price_data_stored?: {
+		stored_count: number;
+		total_count: number;
+		errors: string[];
+	};
 }
 
 export interface PublishRecord {
@@ -194,7 +211,7 @@ export class VehiclePricesService {
 	}
 
 	/**
-	 * Convert entry data to publish format
+	 * Convert entry data to publish format (excluding price data)
 	 */
 	static convertToPublishFormat(parsedData: ParsedData): PublishRecord[] {
 		const records: PublishRecord[] = [];
@@ -249,6 +266,51 @@ export class VehiclePricesService {
 	}
 
 	/**
+	 * Extract price data from entry data
+	 */
+	static extractPriceData(parsedData: ParsedData): PriceData[] {
+		const priceData: PriceData[] = [];
+
+		parsedData.data.forEach((item) => {
+			// Always create UDA record for main period if price exists
+			if (item.price) {
+				priceData.push({
+					yielding_date: parsedData.date,
+					car_group: item.name,
+					type: 'UDA',
+					start_date: this.parseDate(item.start),
+					end_date: this.parseDate(item.end),
+					yield: item.yield,
+					yield_code: item.yield_s,
+					price: item.price,
+					pool: parsedData.location,
+				});
+			}
+
+			// Create PEAK records only if peaks array is not empty
+			if (item.peaks && item.peaks.length > 0) {
+				item.peaks.forEach((peak) => {
+					if (peak.price) {
+						priceData.push({
+							yielding_date: parsedData.date,
+							car_group: item.name,
+							type: 'PEAK',
+							start_date: this.parseDate(peak.start),
+							end_date: this.parseDate(peak.end),
+							yield: peak.yield,
+							yield_code: peak.yield_s,
+							price: peak.price,
+							pool: parsedData.location,
+						});
+					}
+				});
+			}
+		});
+
+		return priceData;
+	}
+
+	/**
 	 * Fetch prices data from the API
 	 */
 	static async fetchPrices(
@@ -283,17 +345,23 @@ export class VehiclePricesService {
 	}
 
 	/**
-	 * Publish steering records to the API
+	 * Publish steering records to the API and store price data in database
 	 */
 	static async publishPrices(entryData: string): Promise<{
 		result: PublishResponse | null;
 		error: string | null;
 		processedRowsCount: number | null;
+		priceDataStored?: {
+			stored_count: number;
+			total_count: number;
+			errors: string[];
+		};
 	}> {
 		try {
 			const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
 			const publishRecords = {
 				steerings: this.convertToPublishFormat(parsedData),
+				price_data: this.extractPriceData(parsedData),
 			};
 
 			const response = await this.makeApiRequest('/price-updater/publish-prices', {
@@ -318,6 +386,7 @@ export class VehiclePricesService {
 				result,
 				error: null,
 				processedRowsCount: publishRecords.steerings.length,
+				priceDataStored: result.price_data_stored,
 			};
 		} catch (publishError) {
 			console.error('Publish error:', publishError);

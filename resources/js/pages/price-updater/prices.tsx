@@ -22,6 +22,11 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 	const [publishResult, setPublishResult] = useState<PublishResponse | null>(null);
 	const [deleteResult, setDeleteResult] = useState<PublishResponse | null>(null);
 	const [processedRowsCount, setProcessedRowsCount] = useState<number | null>(null);
+	const [priceDataStored, setPriceDataStored] = useState<{
+		stored_count: number;
+		total_count: number;
+		errors: string[];
+	} | null>(null);
 	const [refreshingData, setRefreshingData] = useState(false);
 	const [selectedCurrentRows, setSelectedCurrentRows] = useState<Set<string>>(new Set());
 
@@ -141,12 +146,14 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 		setDeleteResult(null);
 		setError(null);
 		setProcessedRowsCount(null);
+		setPriceDataStored(null);
 
 		try {
 			const {
 				result,
 				error: publishError,
 				processedRowsCount: count,
+				priceDataStored: priceData,
 			} = await VehiclePricesService.publishPrices(entryData);
 
 			if (publishError) {
@@ -154,6 +161,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 			} else {
 				setPublishResult(result);
 				setProcessedRowsCount(count);
+				setPriceDataStored(priceData || null);
 
 				// Show the refreshing indicator immediately
 				setRefreshingData(true);
@@ -266,6 +274,26 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 									<strong>{processedRowsCount}</strong> steering records were
 									processed by the external API.
 								</p>
+							)}
+							{priceDataStored && (
+								<div className="mt-3 rounded bg-blue-50 p-3 text-blue-800">
+									<h4 className="font-semibold">Price Data Stored</h4>
+									<p className="text-sm">
+										<strong>{priceDataStored.stored_count}</strong> out of{' '}
+										<strong>{priceDataStored.total_count}</strong> price records
+										stored in database.
+									</p>
+									{priceDataStored.errors.length > 0 && (
+										<div className="mt-2">
+											<p className="text-sm font-medium">Errors:</p>
+											<ul className="ml-4 list-disc text-xs">
+												{priceDataStored.errors.map((error, index) => (
+													<li key={index}>{error}</li>
+												))}
+											</ul>
+										</div>
+									)}
+								</div>
 							)}
 							{refreshingData && (
 								<div className="mt-3 flex items-center gap-2 text-base font-medium">

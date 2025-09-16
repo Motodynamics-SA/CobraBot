@@ -7,6 +7,7 @@ namespace App\Http\Controllers\VehiclePrices;
 use App\Exceptions\VehiclePrices\APIRequestException;
 use App\Exceptions\VehiclePrices\AuthenticationException;
 use App\Http\Controllers\Controller;
+use App\Models\VehiclePrice;
 use App\Services\VehiclePrices\VehiclePricesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,10 +93,22 @@ class VehicleAPIController extends Controller {
 
             Log::info('Publish Prices Response: ' . json_encode($response));
 
-            return response()->json([
+            // Check if we also have price data to store
+            $priceDataStored = null;
+            if (isset($inputData['price_data']) && is_array($inputData['price_data']) && (isset($inputData['price_data']) && $inputData['price_data'] !== [])) {
+                $priceDataStored = $this->storePriceData($inputData['price_data']);
+            }
+
+            $responseData = [
                 'message' => 'Prices published successfully',
                 'response' => $response,
-            ]);
+            ];
+
+            if ($priceDataStored !== null) {
+                $responseData['price_data_stored'] = $priceDataStored;
+            }
+
+            return response()->json($responseData);
         } catch (AuthenticationException $e) {
             Log::error('Authentication failed for vehicle prices API', [
                 'message' => $e->getMessage(),
@@ -125,5 +138,67 @@ class VehicleAPIController extends Controller {
                 ],
             ], $statusCode);
         }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $priceData
+     *
+     * @return array{stored_count: int, total_count: int, errors: array<int, string>}
+     */
+    private function storePriceData(array $priceData): array {
+        $storedCount = 0;
+        $errors = [];
+
+        foreach ($priceData as $index => $priceRecord) {
+            try {
+                // Validate required fields
+                $requiredFields = ['yielding_date', 'car_group', 'type', 'start_date', 'end_date', 'yield', 'yield_code', 'price', 'pool'];
+                foreach ($requiredFields as $requiredField) {
+                    if (! isset($priceRecord[$requiredField])) {
+                        $errors[] = sprintf("Record %s: Missing required field '%s'", $index, $requiredField);
+
+                        continue 2; // Skip this record
+                    }
+                }
+
+                // Convert price string to decimal (handle comma as decimal separator)
+                $priceValue = str_replace(',', '.', $priceRecord['price']);
+                $priceValue = (float) $priceValue;
+
+                VehiclePrice::create([
+                    'yielding_date' => $priceRecord['yielding_date'],
+                    'car_group' => $priceRecord['car_group'],
+                    'type' => $priceRecord['type'],
+                    'start_date' => $priceRecord['start_date'],
+                    'end_date' => $priceRecord['end_date'],
+                    'yield' => $priceRecord['yield'],
+                    'yield_code' => $priceRecord['yield_code'],
+                    'price' => $priceValue,
+                    'pool' => $priceRecord['pool'],
+                ]);
+
+                ++$storedCount;
+            } catch (\Exception $e) {
+                $errors[] = sprintf('Record %s: ', $index) . $e->getMessage();
+                Log::error('Failed to store price record ' . $index, [
+                    'record' => $priceRecord,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($errors !== []) {
+            Log::warning('Some price records failed to store', [
+                'stored_count' => $storedCount,
+                'total_count' => count($priceData),
+                'errors' => $errors,
+            ]);
+        }
+
+        return [
+            'stored_count' => $storedCount,
+            'total_count' => count($priceData),
+            'errors' => $errors,
+        ];
     }
 }
