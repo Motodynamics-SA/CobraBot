@@ -32,11 +32,11 @@ return [
 
     'table_names' => [
         // Get table names based on database driver
-        'roles' => config('database.default') === 'sqlsrv' ? 'cobrabot.roles' : 'roles',
-        'permissions' => config('database.default') === 'sqlsrv' ? 'cobrabot.permissions' : 'permissions',
-        'model_has_permissions' => config('database.default') === 'sqlsrv' ? 'cobrabot.model_has_permissions' : 'model_has_permissions',
-        'model_has_roles' => config('database.default') === 'sqlsrv' ? 'cobrabot.model_has_roles' : 'model_has_roles',
-        'role_has_permissions' => config('database.default') === 'sqlsrv' ? 'cobrabot.role_has_permissions' : 'role_has_permissions',
+        'roles' => env('DB_CONNECTION') === 'sqlsrv' ? 'cobrabot.roles' : 'roles',
+        'permissions' => env('DB_CONNECTION') === 'sqlsrv' ? 'cobrabot.permissions' : 'permissions',
+        'model_has_permissions' => env('DB_CONNECTION') === 'sqlsrv' ? 'cobrabot.model_has_permissions' : 'model_has_permissions',
+        'model_has_roles' => env('DB_CONNECTION') === 'sqlsrv' ? 'cobrabot.model_has_roles' : 'model_has_roles',
+        'role_has_permissions' => env('DB_CONNECTION') === 'sqlsrv' ? 'cobrabot.role_has_permissions' : 'role_has_permissions',
     ],
 
     'column_names' => [
