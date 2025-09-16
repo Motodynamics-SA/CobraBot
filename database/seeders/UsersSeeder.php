@@ -38,6 +38,7 @@ class UsersSeeder extends Seeder {
         ];
     
         foreach ($users as $u) {
+            
             DB::transaction(function () use ($u, $password) {
                 DB::statement('SET IDENTITY_INSERT cobrabot.users ON');
     
