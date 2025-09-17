@@ -34,6 +34,10 @@ export interface PriceData {
 	yield_code: string;
 	price: string;
 	pool: string;
+	steer_from?: string;
+	steer_to?: string;
+	steer_type?: string;
+	value?: string;
 }
 
 export interface SteeringRecord {
@@ -73,6 +77,11 @@ export interface PublishResponse {
 	error?: string;
 	price_data_stored?: {
 		stored_count: number;
+		total_count: number;
+		errors: string[];
+	};
+	price_data_deleted?: {
+		deleted_count: number;
 		total_count: number;
 		errors: string[];
 	};
@@ -127,7 +136,6 @@ export class VehiclePricesService {
 		try {
 			// Get token from meta tag
 			const csrfToken = this.getCsrfToken();
-			console.log('Using CSRF token:', csrfToken ? 'valid' : 'empty');
 
 			// Update headers with CSRF token
 			const updatedOptions: RequestInit = {
@@ -163,7 +171,16 @@ export class VehiclePricesService {
 	 * Parse date from DD/MM/YYYY format to YYYY-MM-DD
 	 */
 	private static parseDate(dateStr: string): string {
-		const [day, month, year] = dateStr.split('/');
+		if (!dateStr) {
+			throw new Error('Date string is required');
+		}
+
+		const parts = dateStr.split('/');
+		if (parts.length !== 3) {
+			throw new Error(`Invalid date format: ${dateStr}. Expected DD/MM/YYYY format.`);
+		}
+
+		const [day, month, year] = parts;
 		return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 	}
 
@@ -196,9 +213,6 @@ export class VehiclePricesService {
 		// Format dates for API (YYYY-MM-DD HH:mm)
 		const steerFrom = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')} 00:00`;
 		const steerTo = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')} 23:59`;
-
-		console.log('steerFrom', steerFrom);
-		console.log('steerTo', steerTo);
 
 		return {
 			location_id: location,
@@ -399,19 +413,31 @@ export class VehiclePricesService {
 	}
 
 	/**
-	 * Delete steering records from the API
+	 * Delete steering records from the API and database
 	 */
-	static async deletePrices(steeringRecords: SteeringRecord[]): Promise<{
+	static async deletePrices(
+		steeringRecords: SteeringRecord[],
+		entryData: string
+	): Promise<{
 		result: PublishResponse | null;
 		error: string | null;
 		processedRowsCount: number | null;
+		priceDataDeleted?: {
+			deleted_count: number;
+			total_count: number;
+			errors: string[];
+		};
 	}> {
 		try {
+			// Convert steering records to price data format for database deletion
+			const priceData = this.convertSteeringRecordsToPriceData(steeringRecords, entryData);
+
 			const deleteRecords = {
 				steerings: this.convertToDeleteFormat(steeringRecords),
+				price_data: priceData,
 			};
 
-			const response = await this.makeApiRequest('/price-updater/publish-prices', {
+			const response = await this.makeApiRequest('/price-updater/delete-prices', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -433,6 +459,7 @@ export class VehiclePricesService {
 				result,
 				error: null,
 				processedRowsCount: deleteRecords.steerings.length,
+				priceDataDeleted: result.price_data_deleted,
 			};
 		} catch (deleteError) {
 			console.error('Delete error:', deleteError);
@@ -442,6 +469,61 @@ export class VehiclePricesService {
 				processedRowsCount: null,
 			};
 		}
+	}
+
+	/**
+	 * Convert steering records to price data format for database deletion
+	 */
+	private static convertSteeringRecordsToPriceData(
+		steeringRecords: SteeringRecord[],
+		entryData: string
+	): PriceData[] {
+		const parsedData: ParsedData = JSON.parse(entryData) as ParsedData;
+		const yieldingDate = parsedData.date;
+
+		return steeringRecords.map((record) => {
+			// Extract date from steer_from (format: YYYY-MM-DD HH:mm)
+			const startDate = record.steer_from.split(' ')[0];
+			const endDate = record.steer_to.split(' ')[0];
+
+			// Find the corresponding data item to get the correct yield_s
+			let yieldCode = '';
+
+			// Try to find matching data item in parsedData
+			const dataItem = parsedData.data.find((item) => item.name === record.vehicle_group);
+			if (dataItem) {
+				if (record.steer_type === 'STEER_TYPE_PEAK') {
+					// For peaks, find the matching peak period
+					const peak = dataItem.peaks.find((peak) => {
+						const peakStart = this.parseDate(peak.start) + ' 00:00';
+						const peakEnd = this.parseDate(peak.end) + ' 23:59';
+						return peakStart === record.steer_from && peakEnd === record.steer_to;
+					});
+					if (peak) {
+						yieldCode = peak.yield_s;
+					}
+				} else {
+					// For UDA, use the main data item's yield_s
+					yieldCode = dataItem.yield_s;
+				}
+			}
+
+			return {
+				yielding_date: yieldingDate,
+				car_group: record.vehicle_group,
+				type: record.steer_type === 'STEER_TYPE_PEAK' ? 'PEAK' : 'UDA',
+				start_date: startDate,
+				end_date: endDate,
+				yield: record.value,
+				yield_code: yieldCode,
+				price: '0', // Price not available in steering records
+				pool: record.location_id,
+				steer_from: record.steer_from,
+				steer_to: record.steer_to,
+				steer_type: record.steer_type,
+				value: record.value,
+			};
+		});
 	}
 
 	/**

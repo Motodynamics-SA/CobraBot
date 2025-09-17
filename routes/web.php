@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('price-updater/data-entry', [DataEntryController::class, 'store'])->name('price-updater.data-entry.store');
     Route::post('price-updater/fetch-prices', [VehicleAPIController::class, 'fetchPrices'])->name('price-updater.fetch-prices');
     Route::post('price-updater/publish-prices', [VehicleAPIController::class, 'publishPrices'])->name('price-updater.publish-prices');
+    Route::post('price-updater/delete-prices', [VehicleAPIController::class, 'deletePrices'])->name('price-updater.delete-prices');
     Route::get('price-updater/prices', [VehiclePricesController::class, 'index'])->name('price-updater.prices.index');
 
     Route::resource('users', UserController::class);
