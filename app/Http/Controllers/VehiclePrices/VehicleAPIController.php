@@ -153,9 +153,6 @@ class VehicleAPIController extends Controller {
             ], 400);
         }
 
-        // Check if price data is provided (optional for deletion)
-        $priceData = $inputData['price_data'] ?? [];
-
         try {
             // Use the token service to make authenticated POST request
             $publishUrl = config('services.vehicle_prices_api.base_url') . '/PublishSteerings';
@@ -163,22 +160,10 @@ class VehicleAPIController extends Controller {
 
             Log::info('Delete Prices Response: ' . json_encode($response));
 
-            // Delete corresponding price data from database if provided
-            $priceDataDeleted = null;
-            if (! empty($priceData)) {
-                $priceDataDeleted = $this->deletePriceData($priceData);
-            }
-
-            $responseData = [
+            return response()->json([
                 'message' => 'Prices deleted successfully',
                 'response' => $response,
-            ];
-
-            if ($priceDataDeleted !== null) {
-                $responseData['price_data_deleted'] = $priceDataDeleted;
-            }
-
-            return response()->json($responseData);
+            ]);
         } catch (AuthenticationException $e) {
             Log::error('Authentication failed for vehicle prices API', [
                 'message' => $e->getMessage(),
@@ -271,92 +256,6 @@ class VehicleAPIController extends Controller {
         return [
             'stored_count' => $storedCount,
             'total_count' => count($priceData),
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $priceRecords
-     *
-     * @return array{deleted_count: int, total_count: int, errors: array<int, string>}
-     */
-    private function deletePriceData(array $priceRecords): array {
-        $deletedCount = 0;
-        $errors = [];
-
-        foreach ($priceRecords as $index => $priceRecord) {
-            try {
-                // Extract date range from steering record
-                $steerFrom = $priceRecord['steer_from'] ?? null;
-                $steerTo = $priceRecord['steer_to'] ?? null;
-                $carGroup = $priceRecord['car_group'] ?? null;
-                $steerType = $priceRecord['steer_type'] ?? null;
-                $pool = $priceRecord['pool'] ?? null;
-                $yieldingDate = $priceRecord['yielding_date'] ?? null;
-                $yield = $priceRecord['value'] ?? null;
-                $yieldCode = $priceRecord['yield_code'] ?? null;
-
-                if (! $steerFrom || ! $steerTo || ! $carGroup) {
-                    $errors[] = sprintf('Record %s: Missing required fields for deletion', $index);
-
-                    continue;
-                }
-
-                // Convert steering dates to Carbon date objects for proper comparison
-                $startDate = Carbon::parse($steerFrom)->format('Y-m-d');
-                $endDate = Carbon::parse($steerTo)->format('Y-m-d');
-
-                // make sure yielding date is in YYYY-MM-DD format
-                $yieldingDate = Carbon::parse($yieldingDate)->format('Y-m-d');
-
-                // Map steering type to price type
-                $steerType = $steerType === 'STEER_TYPE_PEAK' ? 'PEAK' : 'UDA';
-
-                // Find and delete matching records
-                $deleted = (int) VehiclePrice::where('car_group', $carGroup)
-                    ->where('type', $steerType)
-                    ->whereDate('start_date', $startDate)
-                    ->whereDate('end_date', $endDate)
-                    ->where('pool', $pool ?? '')
-                    ->whereDate('yielding_date', $yieldingDate)
-                    ->where('yield', $yield)
-                    ->where('yield_code', $yieldCode)
-                    ->delete();
-
-                $deletedCount += $deleted;
-
-                Log::info(sprintf(
-                    "Deleted %d price records with criteria:\n" .
-                    "├─ car_group: %s\n" .
-                    "├─ type: %s\n" .
-                    "├─ start_date: %s\n" .
-                    "├─ end_date: %s\n" .
-                    "├─ pool: %s\n" .
-                    "├─ yielding_date: %s\n" .
-                    "├─ yield: %s\n" .
-                    '└─ yield_code: %s',
-                    $deleted, $carGroup, $steerType, $startDate, $endDate, $pool ?? 'null', $yieldingDate, $yield ?? 'null', $yieldCode ?? 'null'
-                ));
-            } catch (\Exception $e) {
-                $errors[] = sprintf('Record %s: ', $index) . $e->getMessage();
-                Log::error('Failed to delete price records for steering record ' . $index, [
-                    'record' => $priceRecord,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        if ($errors !== []) {
-            Log::warning('Some price records failed to delete', [
-                'deleted_count' => $deletedCount,
-                'total_count' => count($priceRecords),
-                'errors' => $errors,
-            ]);
-        }
-
-        return [
-            'deleted_count' => $deletedCount,
-            'total_count' => count($priceRecords),
             'errors' => $errors,
         ];
     }
