@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class MicrosoftLoginController extends Controller {
     public function redirectToProvider(): RedirectResponse {
-        return Socialite::driver('microsoft')->redirect();
+        return Socialite::driver('microsoft')->scopes(['openid','profile','offline_access','User.Read'])->redirect();
     }
 
     public function handleProviderCallback(): RedirectResponse {
