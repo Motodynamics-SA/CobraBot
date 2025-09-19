@@ -9,7 +9,6 @@ use App\Exceptions\VehiclePrices\AuthenticationException;
 use App\Http\Controllers\Controller;
 use App\Models\VehiclePrice;
 use App\Services\VehiclePrices\VehiclePricesService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -196,6 +195,30 @@ class VehicleAPIController extends Controller {
     }
 
     /**
+     * Parse date from DD/MM/YYYY or YYYY-MM-DD format to YYYY-MM-DD
+     */
+    private function parseDate(string $dateStr): string {
+        if ($dateStr === '' || $dateStr === '0') {
+            throw new \InvalidArgumentException('Date string is required');
+        }
+
+        // Check if it's already in YYYY-MM-DD format
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+            return $dateStr;
+        }
+
+        // Check if it's in DD/MM/YYYY format
+        $parts = explode('/', $dateStr);
+        if (count($parts) === 3) {
+            [$day, $month, $year] = $parts;
+
+            return sprintf('%04d-%02d-%02d', $year, $month, $day);
+        }
+
+        throw new \InvalidArgumentException(sprintf('Invalid date format: %s. Expected DD/MM/YYYY or YYYY-MM-DD format.', $dateStr));
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $priceData
      *
      * @return array{stored_count: int, total_count: int, errors: array<int, string>}
@@ -207,7 +230,7 @@ class VehicleAPIController extends Controller {
         foreach ($priceData as $index => $priceRecord) {
             try {
                 // Validate required fields
-                $requiredFields = ['yielding_date', 'car_group', 'type', 'start_date', 'end_date', 'yield', 'yield_code', 'price', 'pool'];
+                $requiredFields = ['yielding_date', 'car_group', 'type', 'start_date', 'end_date', 'yield', 'yield_code', 'pool'];
                 foreach ($requiredFields as $requiredField) {
                     if (! isset($priceRecord[$requiredField])) {
                         $errors[] = sprintf("Record %s: Missing required field '%s'", $index, $requiredField);
@@ -217,18 +240,20 @@ class VehicleAPIController extends Controller {
                 }
 
                 // Convert price string to decimal (handle comma as decimal separator)
-                $priceValue = str_replace(',', '.', $priceRecord['price']);
-                $priceValue = (float) $priceValue;
+                $priceValue = isset($priceRecord['price']) ? str_replace(',', '.', $priceRecord['price']) : null;
+                $priceValue = $priceValue !== '' && $priceValue !== '0' && $priceValue !== [] ? (float) $priceValue : null;
 
-                // make sure yielding date is in YYYY-MM-DD format
-                $yieldingDate = Carbon::parse($priceRecord['yielding_date'])->format('Y-m-d');
+                // Parse dates from DD/MM/YYYY format to YYYY-MM-DD format
+                $yieldingDate = $this->parseDate($priceRecord['yielding_date']);
+                $startDate = $this->parseDate($priceRecord['start_date']);
+                $endDate = $this->parseDate($priceRecord['end_date']);
 
                 VehiclePrice::create([
                     'yielding_date' => $yieldingDate,
                     'car_group' => $priceRecord['car_group'],
                     'type' => $priceRecord['type'],
-                    'start_date' => $priceRecord['start_date'],
-                    'end_date' => $priceRecord['end_date'],
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'yield' => $priceRecord['yield'],
                     'yield_code' => $priceRecord['yield_code'],
                     'price' => $priceValue,

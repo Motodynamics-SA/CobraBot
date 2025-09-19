@@ -282,36 +282,33 @@ export class VehiclePricesService {
 
 		parsedData.data.forEach((item) => {
 			// Always create UDA record for main period if price exists
-			if (item.price) {
-				priceData.push({
-					yielding_date: parsedData.date,
-					car_group: item.name,
-					type: 'UDA',
-					start_date: this.parseDate(item.start),
-					end_date: this.parseDate(item.end),
-					yield: item.yield,
-					yield_code: item.yield_s,
-					price: item.price,
-					pool: parsedData.location,
-				});
-			}
+
+			priceData.push({
+				yielding_date: parsedData.date,
+				car_group: item.name,
+				type: 'UDA',
+				start_date: this.parseDate(item.start),
+				end_date: this.parseDate(item.end),
+				yield: item.yield,
+				yield_code: item.yield_s,
+				price: item.price || '',
+				pool: parsedData.location,
+			});
 
 			// Create PEAK records only if peaks array is not empty
 			if (item.peaks && item.peaks.length > 0) {
 				item.peaks.forEach((peak) => {
-					if (peak.price) {
-						priceData.push({
-							yielding_date: parsedData.date,
-							car_group: item.name,
-							type: 'PEAK',
-							start_date: this.parseDate(peak.start),
-							end_date: this.parseDate(peak.end),
-							yield: peak.yield,
-							yield_code: peak.yield_s,
-							price: peak.price,
-							pool: parsedData.location,
-						});
-					}
+					priceData.push({
+						yielding_date: parsedData.date,
+						car_group: item.name,
+						type: 'PEAK',
+						start_date: this.parseDate(peak.start),
+						end_date: this.parseDate(peak.end),
+						yield: peak.yield,
+						yield_code: peak.yield_s,
+						price: peak.price || '',
+						pool: parsedData.location,
+					});
 				});
 			}
 		});
