@@ -76,8 +76,8 @@
 		"post-install-cmd": [
 			"bash tools/git-hooks/install.sh"
 		],
-		"test": "vendor/bin/pest",
-		"test:coverage": "vendor/bin/pest --coverage",
+		"test": "vendor/bin/pest && npm run test",
+		"test:coverage": "vendor/bin/pest --coverage && npm run test:coverage",
 		"lint": [
 			"npm run lint",
 			"npm run lint:styles",
