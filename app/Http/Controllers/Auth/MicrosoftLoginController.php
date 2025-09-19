@@ -34,7 +34,7 @@ class MicrosoftLoginController extends Controller {
 
         if (! in_array($emailDomain, $allowedDomains)) {
             return redirect()->route('login')->withErrors([
-                'email' => 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed.',
+                'email' => 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed. Your email was: ' . $email,
             ]);
         }
 

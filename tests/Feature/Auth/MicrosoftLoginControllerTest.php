@@ -154,7 +154,7 @@ test('handleProviderCallback rejects user with invalid email domain', function (
 
     $response->assertRedirect(route('login'));
     $response->assertSessionHasErrors(['email']);
-    $response->assertSessionHas('errors', fn ($errors): bool => $errors->first('email') === 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed.');
+    $response->assertSessionHas('errors', fn ($errors): bool => $errors->first('email') === 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed. Your email was: user@invalid-domain.com');
 
     $this->assertGuest();
     expect(User::where('email', 'user@invalid-domain.com')->exists())->toBeFalse();
