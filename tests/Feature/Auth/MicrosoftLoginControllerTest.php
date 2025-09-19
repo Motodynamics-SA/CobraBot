@@ -154,7 +154,7 @@ test('handleProviderCallback rejects user with invalid email domain', function (
 
     $response->assertRedirect(route('login'));
     $response->assertSessionHasErrors(['email']);
-    $response->assertSessionHas('errors', fn ($errors): bool => $errors->first('email') === 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed. Your email was: user@invalid-domain.com');
+    $response->assertSessionHas('errors', fn ($errors): bool => $errors->first('email') === 'Access denied. Only @motodynamics.* and @sixt.* email addresses are allowed. Your email was: user@invalid-domain.com');
 
     $this->assertGuest();
     expect(User::where('email', 'user@invalid-domain.com')->exists())->toBeFalse();
@@ -222,11 +222,11 @@ test('handleProviderCallback accepts user with sixt.gr domain', function (): voi
     $this->assertAuthenticatedAs($user);
 });
 
-test('handleProviderCallback accepts user with scify.org domain', function (): void {
+test('handleProviderCallback accepts user with sixt.onmicrosoft.com domain', function (): void {
     $mock = \Mockery::mock(SocialiteUser::class);
-    $mock->shouldReceive('getEmail')->andReturn('employee@scify.org');
-    $mock->shouldReceive('getName')->andReturn('Scify Employee');
-    $mock->shouldReceive('getId')->andReturn('microsoft-scify');
+    $mock->shouldReceive('getEmail')->andReturn('employee@sixt.onmicrosoft.com');
+    $mock->shouldReceive('getName')->andReturn('Sixt Employee');
+    $mock->shouldReceive('getId')->andReturn('microsoft-sixt-onmicrosoft');
 
     $driver = \Mockery::mock('Laravel\Socialite\Two\MicrosoftProvider');
     $driver->shouldReceive('user')->once()->andReturn($mock);
@@ -238,7 +238,7 @@ test('handleProviderCallback accepts user with scify.org domain', function (): v
     $response->assertRedirect(route('price-updater.data-entry.index'));
     $this->assertAuthenticated();
 
-    $user = User::where('email', 'employee@scify.org')->first();
+    $user = User::where('email', 'employee@sixt.onmicrosoft.com')->first();
     expect($user)->not->toBeNull();
     $this->assertAuthenticatedAs($user);
 });
