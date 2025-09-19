@@ -13,14 +13,33 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class MicrosoftLoginController extends Controller {
     public function redirectToProvider(): RedirectResponse {
-        return Socialite::driver('microsoft')->scopes(['openid','profile','offline_access','User.Read'])->redirect();
+        return Socialite::driver('microsoft')->redirect();
     }
 
     public function handleProviderCallback(): RedirectResponse {
         $microsoftUser = Socialite::driver('microsoft')->user();
+        $email = $microsoftUser->getEmail();
+
+        // Check if email domain is allowed
+        $allowedDomains = ['motodynamics.gr', 'sixt.gr', 'scify.org'];
+        $atPosition = strrchr((string) $email, '@');
+
+        if ($atPosition === false) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Invalid email format.',
+            ]);
+        }
+
+        $emailDomain = substr($atPosition, 1);
+
+        if (! in_array($emailDomain, $allowedDomains)) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Access denied. Only @motodynamics.gr and @sixt.gr email addresses are allowed.',
+            ]);
+        }
 
         $user = User::updateOrCreate([
-            'email' => $microsoftUser->getEmail(),
+            'email' => $email,
         ], [
             'name' => $microsoftUser->getName(),
             'provider_id' => $microsoftUser->getId(),

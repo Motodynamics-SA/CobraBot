@@ -3,13 +3,14 @@ import type { Config } from 'jest';
 const config: Config = {
 	preset: 'ts-jest',
 	testEnvironment: 'jsdom',
-	roots: ['<rootDir>/resources/js'],
+	roots: ['<rootDir>'],
 	moduleNameMapper: {
+		'^@/types$': '<rootDir>/resources/js/types/index',
 		'^@/(.*)$': '<rootDir>/resources/js/$1',
 		'\\.(css|scss)$': '<rootDir>/resources/js/__mocks__/styleMock.ts',
 	},
 	setupFilesAfterEnv: ['<rootDir>/resources/js/test/setup.ts'],
-	testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
+	testRegex: '(resources/js/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
 	transform: {
 		'^.+\\.tsx?$': [
 			'ts-jest',

@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Dashboard from '../dashboard';
+import { RolesEnum } from '@/types';
+import type { Config } from 'ziggy-js';
 
 // Mock the AppLayout component
 jest.mock('@/layouts/app-layout', () => {
@@ -41,9 +43,9 @@ const mockStats = {
 		active: 90,
 		deleted: 10,
 		by_role: {
-			admin: 5,
-			'user-manager': 15,
-			'registered-user': 80,
+			[RolesEnum.ADMINISTRATOR]: 5,
+			[RolesEnum.USER_MANAGER]: 15,
+			[RolesEnum.REGISTERED_USER]: 80,
 		},
 		recent: {
 			week: 5,
@@ -56,14 +58,38 @@ const mockStats = {
 			name: 'Test User',
 			email: 'test@example.com',
 			created_at: '2025-04-01T00:00:00.000Z',
-			role: 'admin',
+			role: RolesEnum.ADMINISTRATOR,
 		},
 	],
 };
 
+const mockAuth = {
+	user: {
+		id: 1,
+		name: 'Test User',
+		email: 'test@example.com',
+		role: RolesEnum.ADMINISTRATOR,
+		created_at: '2025-04-01T00:00:00.000Z',
+		updated_at: '2025-04-01T00:00:00.000Z',
+		deleted_at: null,
+		avatar: null,
+		can: {} as Record<string, boolean>,
+	},
+};
+
+const mockZiggy: Config & { location: string } = {
+	location: 'http://localhost',
+	routes: {},
+	url: 'http://localhost',
+	defaults: {},
+	port: 80,
+} as Config & { location: string };
+
 describe('Dashboard Component', () => {
 	it('renders the dashboard with correct stats', () => {
-		render(<Dashboard stats={mockStats} token="test-token" />);
+		render(
+			<Dashboard stats={mockStats} token="test-token" auth={mockAuth} ziggy={mockZiggy} />
+		);
 
 		// Check for total users
 		expect(screen.getByText('dashboard.total_users')).toBeInTheDocument();
@@ -82,7 +108,9 @@ describe('Dashboard Component', () => {
 	});
 
 	it('renders user roles correctly', () => {
-		render(<Dashboard stats={mockStats} token="test-token" />);
+		render(
+			<Dashboard stats={mockStats} token="test-token" auth={mockAuth} ziggy={mockZiggy} />
+		);
 
 		// Check for roles section
 		expect(screen.getByText('dashboard.users_by_role')).toBeInTheDocument();
@@ -99,7 +127,9 @@ describe('Dashboard Component', () => {
 	});
 
 	it('renders recent users', () => {
-		render(<Dashboard stats={mockStats} token="test-token" />);
+		render(
+			<Dashboard stats={mockStats} token="test-token" auth={mockAuth} ziggy={mockZiggy} />
+		);
 
 		expect(screen.getByText('dashboard.recent_users')).toBeInTheDocument();
 		expect(screen.getByText('Test User')).toBeInTheDocument();
