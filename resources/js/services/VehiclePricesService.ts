@@ -5,16 +5,20 @@ export interface DataItem {
 	yield: string;
 	yield_s: string;
 	price?: string;
-	Lor: number;
-	Mlor: number;
+	Lor?: number;
+	Mlor?: number;
+	lor?: number;
+	mlor?: number;
 	peaks: Array<{
 		start: string;
 		end: string;
 		yield: string;
 		yield_s: string;
 		price?: string;
-		Lor: number;
-		Mlor: number;
+		Lor?: number;
+		Mlor?: number;
+		lor?: number;
+		mlor?: number;
 	}>;
 }
 
@@ -180,6 +184,37 @@ export class VehiclePricesService {
 	}
 
 	/**
+	 * Parse yield_s format and return value_type and value
+	 */
+	private static parseYieldS(yieldS: string): { valueType: string; value: number } {
+		if (!yieldS) {
+			throw new Error('Yield_s string is required');
+		}
+
+		// Check if it's in PXY format
+		if (yieldS.startsWith('P')) {
+			const numericPart = yieldS.substring(1);
+			const numericValue = parseInt(numericPart, 10);
+			if (isNaN(numericValue)) {
+				throw new Error(`Invalid yield_s format: ${yieldS}. Expected PXY format.`);
+			}
+			return { valueType: 'VALUE_TYPE_RATE_P', value: numericValue };
+		}
+
+		// Check if it's in IXY format
+		if (yieldS.startsWith('I')) {
+			const numericPart = yieldS.substring(1);
+			const numericValue = parseInt(numericPart, 10);
+			if (isNaN(numericValue)) {
+				throw new Error(`Invalid yield_s format: ${yieldS}. Expected IXY format.`);
+			}
+			return { valueType: 'VALUE_TYPE_RATE_I', value: numericValue };
+		}
+
+		throw new Error(`Invalid yield_s format: ${yieldS}. Expected PXY or IXY format.`);
+	}
+
+	/**
 	 * Analyze data and extract location and date range for API payload
 	 */
 	static analyzeData(data: ParsedData): ApiPayload {
@@ -226,18 +261,25 @@ export class VehiclePricesService {
 		const records: PublishRecord[] = [];
 
 		parsedData.data.forEach((item) => {
+			// Parse yield_s for main period
+			const mainYieldS = this.parseYieldS(item.yield_s);
+
+			// Get length of rent values from JSON or use defaults (case insensitive)
+			const lengthOfRentFrom = item.Lor ?? item.lor ?? 1;
+			const lengthOfRentTo = item.Mlor ?? item.mlor ?? 999;
+
 			// Main period
 			records.push({
 				location_level: 'LOCATION_LEVEL_BRANCH',
 				location_id: parsedData.location,
 				steer_type: 'STEER_TYPE_UDA',
-				length_of_rent_from: 1,
-				length_of_rent_to: 1,
+				length_of_rent_from: lengthOfRentFrom,
+				length_of_rent_to: lengthOfRentTo,
 				vehicle_type: 'VEHICLE_TYPE_P',
 				vehicle_group: item.name,
 				yield_type: 'TYPE_LEVEL_PLAIN',
-				value_type: 'VALUE_TYPE_RATE_P',
-				value: parseFloat(item.yield) || 0,
+				value_type: mainYieldS.valueType,
+				value: mainYieldS.value,
 				steer_from: this.parseDate(item.start) + ' 00:00',
 				steer_to: this.parseDate(item.end) + ' 23:59',
 				identity: 'franchise',
@@ -249,17 +291,24 @@ export class VehiclePricesService {
 
 			// Peaks
 			item.peaks.forEach((peak) => {
+				// Parse yield_s for peak
+				const peakYieldS = this.parseYieldS(peak.yield_s);
+
+				// Get length of rent values from peak JSON or use defaults (case insensitive)
+				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 1;
+				const peakLengthOfRentTo = peak.Mlor ?? peak.mlor ?? 999;
+
 				records.push({
 					location_level: 'LOCATION_LEVEL_BRANCH',
 					location_id: parsedData.location,
 					steer_type: 'STEER_TYPE_PEAK',
-					length_of_rent_from: 1,
-					length_of_rent_to: 1,
+					length_of_rent_from: peakLengthOfRentFrom,
+					length_of_rent_to: peakLengthOfRentTo,
 					vehicle_type: 'VEHICLE_TYPE_P',
 					vehicle_group: item.name,
 					yield_type: 'TYPE_LEVEL_PLAIN',
-					value_type: 'VALUE_TYPE_RATE_P',
-					value: parseFloat(peak.yield) || 0,
+					value_type: peakYieldS.valueType,
+					value: peakYieldS.value,
 					steer_from: this.parseDate(peak.start) + ' 00:00',
 					steer_to: this.parseDate(peak.end) + ' 23:59',
 					identity: 'franchise',
@@ -515,30 +564,44 @@ export class VehiclePricesService {
 		const records: SteeringRecord[] = [];
 
 		parsedData.data.forEach((item) => {
+			// Parse yield_s for main period
+			const mainYieldS = this.parseYieldS(item.yield_s);
+
+			// Get length of rent values from JSON or use defaults (case insensitive)
+			const lengthOfRentFrom = item.Lor ?? item.lor ?? 1;
+			const lengthOfRentTo = item.Mlor ?? item.mlor ?? 999;
+
 			// Main period
 			records.push({
 				id: '',
 				steer_type: 'STEER_TYPE_UDA',
 				steer_from: this.parseDate(item.start) + ' 00:00',
 				steer_to: this.parseDate(item.end) + ' 23:59',
-				length_of_rent_from: 1,
-				length_of_rent_to: 1,
+				length_of_rent_from: lengthOfRentFrom,
+				length_of_rent_to: lengthOfRentTo,
 				vehicle_group: item.name,
-				value: item.yield || '-',
+				value: mainYieldS.value.toString(),
 				...baseFields,
 			});
 
 			// Peaks
 			item.peaks.forEach((peak) => {
+				// Parse yield_s for peak
+				const peakYieldS = this.parseYieldS(peak.yield_s);
+
+				// Get length of rent values from peak JSON or use defaults (case insensitive)
+				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 1;
+				const peakLengthOfRentTo = peak.Mlor ?? peak.mlor ?? 999;
+
 				records.push({
 					id: '',
 					steer_type: 'STEER_TYPE_PEAK',
 					steer_from: this.parseDate(peak.start) + ' 00:00',
 					steer_to: this.parseDate(peak.end) + ' 23:59',
-					length_of_rent_from: 1,
-					length_of_rent_to: 1,
+					length_of_rent_from: peakLengthOfRentFrom,
+					length_of_rent_to: peakLengthOfRentTo,
 					vehicle_group: item.name,
-					value: peak.yield || '-',
+					value: peakYieldS.value.toString(),
 					...baseFields,
 				});
 			});
