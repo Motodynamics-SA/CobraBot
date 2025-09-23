@@ -78,7 +78,6 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 	id,
 	selectedRows = new Set(),
 	onRowSelect,
-	showSelectionControls = false,
 }) => {
 	const handleRowClick = (rowId: string) => {
 		if (onRowSelect) {
@@ -95,7 +94,6 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 				className="steering-table min-w-full divide-y divide-gray-200 border border-gray-200"
 			>
 				<colgroup>
-					{showSelectionControls && <col className="selection-column" />}
 					<col className="table-col-1" />
 					<col className="table-col-2" />
 					<col className="table-col-3" />
@@ -110,7 +108,6 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 					<col className="table-col-12" />
 					<col className="table-col-13" />
 					<col className="table-col-14" />
-					<col className="table-col-15" />
 				</colgroup>
 				<thead className="bg-gray-50">
 					<tr>
@@ -124,7 +121,7 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 							scope="col"
 							className="border-r border-gray-200 px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
 						>
-							steering date
+							Steering Date
 						</th>
 						<th
 							scope="col"
@@ -205,6 +202,8 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 						const rowId = id + '_' + (steering.id || index);
 						const isSelected = isRowSelected(rowId);
 
+						console.log(steering);
+
 						return (
 							<tr
 								key={rowId}
@@ -213,11 +212,6 @@ const SteeringDataTable: React.FC<SteeringDataTableProps> = ({
 								}`}
 								onClick={() => handleRowClick(rowId)}
 							>
-								{showSelectionControls && (
-									<td className="selection-column border-r border-gray-200 px-3 py-2 text-sm">
-										{isSelected && <span className="text-white">✓</span>}
-									</td>
-								)}
 								<td className="border-r border-gray-200 px-3 py-2 text-sm">
 									{steering.id}
 								</td>

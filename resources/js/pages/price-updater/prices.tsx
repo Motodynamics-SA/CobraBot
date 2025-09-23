@@ -74,7 +74,7 @@ const PricesPage: React.FC<PricesPageProps> = ({ entryData }) => {
 				result,
 				error: deleteError,
 				processedRowsCount: count,
-			} = await VehiclePricesService.deletePrices(selectedRecords, entryData);
+			} = await VehiclePricesService.deletePrices(selectedRecords);
 
 			if (deleteError) {
 				setError(deleteError);
