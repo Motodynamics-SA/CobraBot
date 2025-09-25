@@ -304,6 +304,7 @@ jobs:
                       --enableRetired
                       --enableExperimental
                       --nvdApiDelay 2000
+                      --disableOssIndex
 
             - name: Upload OWASP Report as Artifact
               if: always()

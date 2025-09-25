@@ -265,7 +265,7 @@ export class VehiclePricesService {
 			const mainYieldS = this.parseYieldS(item.yield_s);
 
 			// Get length of rent values from JSON or use defaults (case insensitive)
-			const lengthOfRentFrom = item.Lor ?? item.lor ?? 1;
+			const lengthOfRentFrom = item.Lor ?? item.lor ?? 0;
 			const lengthOfRentTo = item.Mlor ?? item.mlor ?? 999;
 
 			// Main period
@@ -295,7 +295,7 @@ export class VehiclePricesService {
 				const peakYieldS = this.parseYieldS(peak.yield_s);
 
 				// Get length of rent values from peak JSON or use defaults (case insensitive)
-				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 1;
+				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 0;
 				const peakLengthOfRentTo = peak.Mlor ?? peak.mlor ?? 999;
 
 				records.push({
@@ -568,7 +568,7 @@ export class VehiclePricesService {
 			const mainYieldS = this.parseYieldS(item.yield_s);
 
 			// Get length of rent values from JSON or use defaults (case insensitive)
-			const lengthOfRentFrom = item.Lor ?? item.lor ?? 1;
+			const lengthOfRentFrom = item.Lor ?? item.lor ?? 0;
 			const lengthOfRentTo = item.Mlor ?? item.mlor ?? 999;
 
 			// Main period
@@ -590,7 +590,7 @@ export class VehiclePricesService {
 				const peakYieldS = this.parseYieldS(peak.yield_s);
 
 				// Get length of rent values from peak JSON or use defaults (case insensitive)
-				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 1;
+				const peakLengthOfRentFrom = peak.Lor ?? peak.lor ?? 0;
 				const peakLengthOfRentTo = peak.Mlor ?? peak.mlor ?? 999;
 
 				records.push({
